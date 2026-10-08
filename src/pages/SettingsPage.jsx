@@ -86,7 +86,7 @@ const SettingsPage = ({
   const menuItems = [
     { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { key: 'verifikasi', label: 'Verifikasi Transaksi', icon: FileCheck2 },
-    { key: 'moderasi', label: 'Moderasi Jasa', icon: ShieldCheck },
+    { key: 'moderasi', label: 'Moderasi Jasa', icon: ShieldCheck, badge: 1 },
     { key: 'user-management', label: 'Manajemen User', icon: Users },
   ];
 
