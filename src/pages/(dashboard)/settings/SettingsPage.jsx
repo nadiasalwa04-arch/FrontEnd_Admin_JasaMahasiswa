@@ -4,7 +4,6 @@ import {
   Users, Bell, ArrowLeft, Upload, Lock, Info, Eye, EyeOff, Clock
 } from 'lucide-react';
 
-
 const SettingsPage = ({
   onNavigateDashboard = () => {},
   onNavigateUserManagement = () => {},
@@ -23,10 +22,8 @@ const SettingsPage = ({
     avatarUrl: null
   });
 
-
   const [platformFee, setPlatformFee] = useState('10%');
   const [minWithdraw, setMinWithdraw] = useState('Rp 50.000');
-
 
   const [passwords, setPasswords] = useState({
     current: '',
@@ -34,11 +31,9 @@ const SettingsPage = ({
     confirmPass: ''
   });
 
-
   const [showCurrentPass, setShowCurrentPass] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
-
 
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef(null);
@@ -47,9 +42,7 @@ const SettingsPage = ({
     { id: 2, title: 'Keamanan', desc: 'Sesi login admin baru dideteksi.', time: '1 jam lalu', unread: true },
   ]);
 
-
   const fileInputRef = useRef(null);
-
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -61,7 +54,6 @@ const SettingsPage = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-
   const handleMenuClick = (menuKey) => {
     setActiveMenu(menuKey);
     if (menuKey === 'dashboard') onNavigateDashboard();
@@ -69,7 +61,6 @@ const SettingsPage = ({
     else if (menuKey === 'moderasi') onNavigateServiceModeration();
     else if (menuKey === 'user-management') onNavigateUserManagement();
   };
-
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -79,9 +70,7 @@ const SettingsPage = ({
     }
   };
 
-
   const unreadCount = notifications.filter(n => n.unread).length;
-
 
   const menuItems = [
     { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -90,9 +79,9 @@ const SettingsPage = ({
     { key: 'user-management', label: 'Manajemen User', icon: Users },
   ];
 
-
   return (
     <div className="flex h-screen w-screen bg-[#F8FAFC] overflow-hidden font-sans select-none relative">
+      {/* SIDEBAR TERTANAM */}
       <aside className="w-64 bg-white border-r border-slate-200/80 flex flex-col justify-between p-5 z-20 shrink-0">
         <div>
           <div className="flex items-center gap-3 px-2 mb-8">
@@ -104,7 +93,6 @@ const SettingsPage = ({
               <span className="font-bold text-base text-[#2563EB] tracking-tight">Mahasiswa</span>
             </div>
           </div>
-
 
           <nav className="space-y-1.5">
             {menuItems.map(({ key, label, icon: Icon }) => (
@@ -122,7 +110,6 @@ const SettingsPage = ({
           </nav>
         </div>
 
-
         <button
           onClick={onNavigateSettings}
           className="pt-4 border-t border-slate-100 flex items-center gap-3 px-2 w-full text-left bg-slate-50 p-2 rounded-xl transition-all cursor-pointer hover:bg-slate-100"
@@ -137,7 +124,7 @@ const SettingsPage = ({
         </button>
       </aside>
 
-
+      {/* MAIN CONTENT AREA */}
       <main className="flex-1 flex flex-col overflow-y-auto bg-[#F8FAFC]">
         <header className="sticky top-0 z-10 bg-[#F8FAFC]/90 backdrop-blur-md px-8 py-5 flex items-center justify-between border-b border-slate-200/60">
           <div>
@@ -155,7 +142,6 @@ const SettingsPage = ({
             </h1>
           </div>
 
-
           <div className="flex items-center gap-4">
             <div className="relative" ref={notificationRef}>
               <button
@@ -167,7 +153,6 @@ const SettingsPage = ({
                   <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white animate-pulse" />
                 )}
               </button>
-
 
               {showNotifications && (
                 <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 p-4 z-50">
@@ -189,14 +174,12 @@ const SettingsPage = ({
               )}
             </div>
 
-
             <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-full text-emerald-700 text-xs font-semibold">
               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
               <span>System Active</span>
             </div>
           </div>
         </header>
-
 
         <div className="p-8">
           {activeTab === 'settings' && (
@@ -212,11 +195,9 @@ const SettingsPage = ({
                   )}
                 </div>
 
-
                 <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">{profile.name}</h2>
                 <p className="text-xs text-slate-400 mt-0.5">{profile.email}</p>
                 <p className="text-xs font-medium text-slate-500 mt-1">{profile.role}</p>
-
 
                 <button
                   onClick={() => setActiveTab('edit-profile')}
@@ -226,11 +207,9 @@ const SettingsPage = ({
                 </button>
               </div>
 
-
               <div className="space-y-6">
                 <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
                   <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Pengaturan Platform</h3>
-
 
                   <div className="space-y-3">
                     <div>
@@ -243,7 +222,6 @@ const SettingsPage = ({
                       />
                     </div>
 
-
                     <div>
                       <label className="text-xs font-bold text-slate-700 block mb-1.5">Batas Minimal Pencairan</label>
                       <input
@@ -255,18 +233,15 @@ const SettingsPage = ({
                     </div>
                   </div>
 
-
                   <button className="w-full py-2.5 bg-[#0F172A] hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer mt-2">
                     Simpan
                   </button>
                 </div>
 
-
                 <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
                   <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4">
                     Log Aktivitas Admin Terakhir
                   </h3>
-
 
                   <div className="space-y-4 border-l-2 border-slate-100 ml-2 pl-4">
                     <div className="relative">
@@ -275,13 +250,11 @@ const SettingsPage = ({
                       <p className="text-xs text-slate-700 mt-0.5">Menyetujui pencairan dana #TRX-8820.</p>
                     </div>
 
-
                     <div className="relative">
                       <span className="w-2.5 h-2.5 bg-slate-300 rounded-full absolute -left-5 top-1"></span>
                       <p className="text-xs font-semibold text-slate-500">Hari ini, 08:12</p>
                       <p className="text-xs text-slate-700 mt-0.5">Memverifikasi akun Rian Hidayat (Teknik UB).</p>
                     </div>
-
 
                     <div className="relative">
                       <span className="w-2.5 h-2.5 bg-slate-300 rounded-full absolute -left-5 top-1"></span>
@@ -294,7 +267,6 @@ const SettingsPage = ({
             </div>
           )}
 
-
           {activeTab === 'edit-profile' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
               <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-5">
@@ -302,7 +274,6 @@ const SettingsPage = ({
                   <h3 className="text-sm font-bold text-slate-900">Data Profil Admin</h3>
                   <p className="text-xs text-slate-400">Perbarui foto profil dan informasi data diri akun Anda.</p>
                 </div>
-
 
                 <div className="flex items-center gap-4 py-2 border-b border-slate-100 pb-5">
                   <input
@@ -313,7 +284,6 @@ const SettingsPage = ({
                     className="hidden"
                   />
 
-
                   {profile.avatarUrl ? (
                     <img src={profile.avatarUrl} alt="Avatar" className="w-16 h-16 rounded-full object-cover shrink-0" />
                   ) : (
@@ -321,7 +291,6 @@ const SettingsPage = ({
                       AD
                     </div>
                   )}
-
 
                   <div>
                     <button
@@ -335,7 +304,6 @@ const SettingsPage = ({
                   </div>
                 </div>
 
-
                 <div className="space-y-3.5">
                   <div>
                     <label className="text-xs font-bold text-slate-700 block mb-1">Nama Lengkap</label>
@@ -347,7 +315,6 @@ const SettingsPage = ({
                     />
                   </div>
 
-
                   <div>
                     <label className="text-xs font-bold text-slate-700 block mb-1">Alamat Email</label>
                     <input
@@ -358,7 +325,6 @@ const SettingsPage = ({
                     />
                   </div>
 
-
                   <div>
                     <label className="text-xs font-bold text-slate-700 block mb-1">Nomor Telepon / WhatsApp</label>
                     <input
@@ -368,7 +334,6 @@ const SettingsPage = ({
                       className="w-full px-4 py-2.5 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs text-slate-800 font-medium outline-none focus:border-blue-500 transition-all"
                     />
                   </div>
-
 
                   <div>
                     <label className="text-xs font-bold text-slate-700 block mb-1">Peran System</label>
@@ -384,19 +349,16 @@ const SettingsPage = ({
                   </div>
                 </div>
 
-
                 <button className="w-full py-2.5 bg-[#0F172A] hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer mt-2">
                   Simpan Profil
                 </button>
               </div>
-
 
               <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-5">
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">Keamanan & Password</h3>
                   <p className="text-xs text-slate-400">Ganti kata sandi secara berkala untuk menjaga keamanan akun.</p>
                 </div>
-
 
                 <div className="bg-blue-50 border border-blue-100 rounded-2xl p-3.5 flex items-start gap-2.5 text-blue-700">
                   <Info className="w-4 h-4 shrink-0 mt-0.5" />
@@ -405,7 +367,6 @@ const SettingsPage = ({
                     <p className="text-[11px] text-blue-600 mt-0.5">Minimal 8 karakter, kombinasi huruf kapital, huruf kecil, simbol & angka.</p>
                   </div>
                 </div>
-
 
                 <div className="space-y-3.5">
                   <div>
@@ -428,7 +389,6 @@ const SettingsPage = ({
                     </div>
                   </div>
 
-
                   <div>
                     <label className="text-xs font-bold text-slate-700 block mb-1">Password Baru</label>
                     <div className="relative">
@@ -448,7 +408,6 @@ const SettingsPage = ({
                       </button>
                     </div>
                   </div>
-
 
                   <div>
                     <label className="text-xs font-bold text-slate-700 block mb-1">Konfirmasi Password Baru</label>
@@ -471,7 +430,6 @@ const SettingsPage = ({
                   </div>
                 </div>
 
-
                 <button className="w-full py-2.5 bg-[#2563EB] hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer mt-2">
                   Perbarui Password
                 </button>
@@ -484,6 +442,4 @@ const SettingsPage = ({
   );
 };
 
-
 export default SettingsPage;
-

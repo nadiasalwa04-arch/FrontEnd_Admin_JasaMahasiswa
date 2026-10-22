@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { GraduationCap, LayoutDashboard, FileCheck2, ShieldCheck, Users, Search, ArrowRight, Bell, Clock } from 'lucide-react';
+import { 
+  GraduationCap, LayoutDashboard, FileCheck2, ShieldCheck, 
+  Users, Search, ArrowRight, Bell, Clock 
+} from 'lucide-react';
 
 const DashboardPage = ({
   onNavigateUserManagement = () => {},
@@ -58,6 +61,7 @@ const DashboardPage = ({
 
   return (
     <div className="flex h-screen w-screen bg-[#F8FAFC] overflow-hidden font-sans select-none relative">
+      {/* SIDEBAR TERTANAM */}
       <aside className="w-64 bg-white border-r border-slate-200/80 flex flex-col justify-between p-5 z-20 shrink-0">
         <div>
           <div className="flex items-center gap-3 px-2 mb-8">
@@ -84,6 +88,7 @@ const DashboardPage = ({
         </button>
       </aside>
 
+      {/* MAIN CONTENT AREA */}
       <main className="flex-1 flex flex-col overflow-y-auto bg-[#F8FAFC]">
         <header className="sticky top-0 z-30 bg-[#F8FAFC]/90 backdrop-blur-md px-8 py-5 flex items-center justify-between border-b border-slate-200/60">
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">Dashboard Overview</h1>
