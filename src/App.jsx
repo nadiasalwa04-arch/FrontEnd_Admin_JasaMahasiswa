@@ -1,75 +1,90 @@
-import React, { useState } from 'react';
-import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage';
-import SettingsPage from './pages/SettingsPage';
-import TransactionVerificationPage from './pages/TransactionVerificationPage';
-import ServiceModerationPage from './pages/ServiceModerationPage';
-import UserManagementPage from './pages/UserManagementPage';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 
-function App() {
-  const [currentPage, setCurrentPage] = useState('landing');
+// Import komponen sesuai lokasi folder baru
+import DashboardPage from './pages/dashboard/DashboardPage';
+import ServiceModerationPage from './pages/services/ServiceModerationPage';
+import TransactionVerificationPage from './pages/transactions/TransactionVerificationPage';
+import UserManagementPage from './pages/users/UserManagementPage';
+import SettingsPage from './pages/settings/SettingsPage';
+import LoginPage from './pages/auth/LoginPage';
+import LandingPage from './pages/Landing/LandingPage';
+
+function AppRoutes() {
+  const navigate = useNavigate();
 
   return (
-    <div>
-      {currentPage === 'landing' && (
-        <LandingPage onNavigateToLogin={() => setCurrentPage('login')} />
-      )}
+    <Routes>
+      <Route path="/" element={<LandingPage onNavigateLogin={() => navigate('/login')} />} />
+      <Route path="/login" element={<LoginPage onNavigateDashboard={() => navigate('/dashboard')} />} />
       
-      {currentPage === 'login' && (
-        <LoginPage 
-          onBack={() => setCurrentPage('landing')} 
-          onLoginSuccess={() => setCurrentPage('dashboard')} 
-        />
-      )}
-
-      {currentPage === 'dashboard' && (
-        <DashboardPage 
-          onNavigateUserManagement={() => setCurrentPage('user-management')} 
-          onNavigateSettings={() => setCurrentPage('settings')}
-          onNavigateTransactionVerification={() => setCurrentPage('transaction-verification')}
-          onNavigateServiceModeration={() => setCurrentPage('service-moderation')}
-        />
-      )}
-
-      {currentPage === 'settings' && (
-        <SettingsPage 
-          onNavigateDashboard={() => setCurrentPage('dashboard')}
-          onNavigateUserManagement={() => setCurrentPage('user-management')}
-          onNavigateTransactionVerification={() => setCurrentPage('transaction-verification')}
-          onNavigateServiceModeration={() => setCurrentPage('service-moderation')}
-        />
-      )}
-
-      {currentPage === 'transaction-verification' && (
-        <TransactionVerificationPage 
-          onNavigateDashboard={() => setCurrentPage('dashboard')}
-          onNavigateUserManagement={() => setCurrentPage('user-management')}
-          onNavigateSettings={() => setCurrentPage('settings')}
-          onNavigateServiceModeration={() => setCurrentPage('service-moderation')}
-        />
-      )}
-
-      {currentPage === 'service-moderation' && (
-        <ServiceModerationPage 
-          onNavigateDashboard={() => setCurrentPage('dashboard')}
-          onNavigateUserManagement={() => setCurrentPage('user-management')}
-          onNavigateSettings={() => setCurrentPage('settings')}
-          onNavigateTransactionVerification={() => setCurrentPage('transaction-verification')}
-        />
-      )}
-
-      {currentPage === 'user-management' && (
-        <UserManagementPage 
-          onNavigateDashboard={() => setCurrentPage('dashboard')}
-          onNavigateUserManagement={() => setCurrentPage('user-management')}
-          onNavigateSettings={() => setCurrentPage('settings')}
-          onNavigateTransactionVerification={() => setCurrentPage('transaction-verification')}
-          onNavigateServiceModeration={() => setCurrentPage('service-moderation')}
-        />
-      )}
-    </div>
+      <Route 
+        path="/dashboard" 
+        element={
+          <DashboardPage 
+            onNavigateUserManagement={() => navigate('/manajemen-user')}
+            onNavigateSettings={() => navigate('/pengaturan')}
+            onNavigateTransactionVerification={() => navigate('/verifikasi-transaksi')}
+            onNavigateServiceModeration={() => navigate('/moderasi-jasa')}
+          />
+        } 
+      />
+      
+      <Route 
+        path="/moderasi-jasa" 
+        element={
+          <ServiceModerationPage 
+            onNavigateDashboard={() => navigate('/dashboard')}
+            onNavigateTransactionVerification={() => navigate('/verifikasi-transaksi')}
+            onNavigateUserManagement={() => navigate('/manajemen-user')}
+            onNavigateSettings={() => navigate('/pengaturan')}
+          />
+        } 
+      />
+      
+      <Route 
+        path="/verifikasi-transaksi" 
+        element={
+          <TransactionVerificationPage 
+            onNavigateDashboard={() => navigate('/dashboard')}
+            onNavigateServiceModeration={() => navigate('/moderasi-jasa')}
+            onNavigateUserManagement={() => navigate('/manajemen-user')}
+            onNavigateSettings={() => navigate('/pengaturan')}
+          />
+        } 
+      />
+      
+      <Route 
+        path="/manajemen-user" 
+        element={
+          <UserManagementPage 
+            onNavigateDashboard={() => navigate('/dashboard')}
+            onNavigateTransactionVerification={() => navigate('/verifikasi-transaksi')}
+            onNavigateServiceModeration={() => navigate('/moderasi-jasa')}
+            onNavigateSettings={() => navigate('/pengaturan')}
+          />
+        } 
+      />
+      
+      <Route 
+        path="/pengaturan" 
+        element={
+          <SettingsPage 
+            onNavigateDashboard={() => navigate('/dashboard')}
+            onNavigateTransactionVerification={() => navigate('/verifikasi-transaksi')}
+            onNavigateServiceModeration={() => navigate('/moderasi-jasa')}
+            onNavigateUserManagement={() => navigate('/manajemen-user')}
+          />
+        } 
+      />
+    </Routes>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <Router>
+      <AppRoutes />
+    </Router>
+  );
+}
