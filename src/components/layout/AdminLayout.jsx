@@ -2,16 +2,18 @@ import React from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
-const AdminLayout = ({ 
-  children, 
-  activeMenu, 
-  title, 
-  searchQuery, 
-  setSearchQuery, 
-  showNotifications, 
-  setShowNotifications, 
-  notifications, 
-  setNotifications, 
+const AdminLayout = ({
+  children,
+  isSidebarOpen,
+  setIsSidebarOpen,
+  activeMenu,
+  title,
+  searchQuery,
+  setSearchQuery,
+  showNotifications,
+  setShowNotifications,
+  notifications,
+  setNotifications,
   notificationRef,
   onNavigateDashboard,
   onNavigateTransactionVerification,
@@ -20,8 +22,11 @@ const AdminLayout = ({
   onNavigateSettings
 }) => {
   return (
-    <div className="flex h-screen w-screen bg-[#F8FAFC] overflow-hidden font-sans select-none relative">
+    <div className="flex h-screen bg-[#F8FAFC] font-sans antialiased overflow-hidden w-full">
+      {/* SIDEBAR GEMINI COLLAPSIBLE */}
       <Sidebar
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
         activeMenu={activeMenu}
         onNavigateDashboard={onNavigateDashboard}
         onNavigateTransactionVerification={onNavigateTransactionVerification}
@@ -29,7 +34,9 @@ const AdminLayout = ({
         onNavigateUserManagement={onNavigateUserManagement}
         onNavigateSettings={onNavigateSettings}
       />
-      <main className="flex-1 flex flex-col overflow-y-auto bg-[#F8FAFC]">
+
+      {/* AREA UTAMA KONTEN (IKUT MELEBAR & MENYEPIK SECARA SMOOTH) */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300 ease-in-out">
         <Header
           title={title}
           searchQuery={searchQuery}
@@ -40,8 +47,11 @@ const AdminLayout = ({
           setNotifications={setNotifications}
           notificationRef={notificationRef}
         />
-        {children}
-      </main>
+
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
+      </div>
     </div>
   );
 };
