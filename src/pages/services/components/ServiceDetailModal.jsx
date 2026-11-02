@@ -1,12 +1,12 @@
 import React from 'react';
 import { X } from 'lucide-react';
 
-const ServiceDetailModal = ({ selectedService, closeModal }) => {
+const ServiceDetailModal = ({ selectedService, closeModal, onApprove, onReject }) => {
   if (!selectedService) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150 relative">
+      <div className="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150 relative max-h-[90vh] overflow-y-auto">
         <button 
           onClick={closeModal} 
           className="absolute right-5 top-5 p-1.5 text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-full transition-all cursor-pointer"
@@ -15,8 +15,8 @@ const ServiceDetailModal = ({ selectedService, closeModal }) => {
         </button>
 
         <div className="flex items-center gap-2">
-          <span className="px-3 py-1 bg-[#DCFCE7] text-[#166534] font-extrabold text-[10px] rounded-md tracking-wider">
-            DITERIMA
+          <span className="px-3 py-1 bg-blue-100 text-blue-700 font-extrabold text-[10px] rounded-md tracking-wider">
+            {selectedService.status}
           </span>
           <span className="text-xs font-bold text-slate-400">{selectedService.category}</span>
         </div>
@@ -53,10 +53,30 @@ const ServiceDetailModal = ({ selectedService, closeModal }) => {
           </div>
         </div>
 
-        <div className="pt-2 flex justify-end">
-          <button onClick={closeModal} className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl cursor-pointer transition-all">
-            Tutup
-          </button>
+        <div className="pt-2 flex gap-3">
+          {selectedService.status === 'PENDING' ? (
+            <>
+              <button 
+                onClick={onReject} 
+                className="flex-1 py-2.5 bg-[#FFE4E6] hover:bg-red-200 text-[#E11D48] font-bold text-xs rounded-xl transition-all cursor-pointer"
+              >
+                Tolak Pengajuan
+              </button>
+              <button 
+                onClick={onApprove} 
+                className="flex-1 py-2.5 bg-[#16A34A] hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer shadow-md shadow-emerald-600/20"
+              >
+                Setujui & Terbitkan
+              </button>
+            </>
+          ) : (
+            <button 
+              onClick={closeModal} 
+              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl cursor-pointer transition-all"
+            >
+              Tutup
+            </button>
+          )}
         </div>
       </div>
     </div>

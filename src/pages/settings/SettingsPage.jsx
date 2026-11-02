@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import AdminLayout from '../../../components/layout/AdminLayout';
+import AdminLayout from '../../components/layout/AdminLayout';
 import ProfileForm from './components/ProfileForm';
 import SecurityForm from './components/SecurityForm';
 
 const SettingsPage = ({
   isSidebarOpen,
   setIsSidebarOpen,
+  pendingServiceCount = 0,
   onNavigateDashboard = () => {},
   onNavigateUserManagement = () => {},
   onNavigateSettings = () => {},
@@ -55,6 +56,7 @@ const SettingsPage = ({
       isSidebarOpen={isSidebarOpen}
       setIsSidebarOpen={setIsSidebarOpen}
       activeMenu="settings"
+      pendingServiceCount={pendingServiceCount}
       title={activeTab === 'settings' ? 'Pengaturan Akun & Sistem' : 'Edit Profil & Ubah Password'}
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
@@ -69,7 +71,7 @@ const SettingsPage = ({
       onNavigateUserManagement={onNavigateUserManagement}
       onNavigateSettings={onNavigateSettings}
     >
-      <div className="p-8">
+      <div className="p-4 sm:p-6 md:p-8 space-y-6">
         {activeTab === 'edit-profile' && (
           <button
             onClick={() => setActiveTab('settings')}

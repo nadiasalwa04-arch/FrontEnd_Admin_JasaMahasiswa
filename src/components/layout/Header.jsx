@@ -1,73 +1,74 @@
 import React from 'react';
-import { Search, Bell, ArrowLeft } from 'lucide-react';
-import NotificationDropdown from '../common/NotificationDropdown';
+import { Menu, Search, Bell } from 'lucide-react';
 
 const Header = ({
-  title = 'Dashboard Overview',
-  searchQuery = '',
-  setSearchQuery = null,
-  showNotifications = false,
-  setShowNotifications = () => {},
+  title,
+  searchQuery,
+  setSearchQuery,
+  showNotifications,
+  setShowNotifications,
   notifications = [],
-  setNotifications = () => {},
-  notificationRef = null,
-  showBackButton = false,
-  onBack = () => {}
+  setNotifications,
+  notificationRef,
+  setIsSidebarOpen
 }) => {
   return (
-    <header className="sticky top-0 z-30 bg-[#F8FAFC]/90 backdrop-blur-md px-8 py-5 flex items-center justify-between border-b border-slate-200/60">
-      <div>
-        {showBackButton && (
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-xs font-semibold mb-1 cursor-pointer transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Kembali ke Pengaturan</span>
-          </button>
-        )}
-        <h1 className="text-xl font-bold text-slate-900 tracking-tight">{title}</h1>
+    <header className="sticky top-0 z-30 bg-[#F8FAFC]/95 backdrop-blur-md px-4 md:px-8 py-3.5 flex items-center justify-between border-b border-slate-200/60 gap-3">
+      {/* KIRI: TOMBOL GARIS 3 (MOBILE) & JUDUL HALAMAN */}
+      <div className="flex items-center gap-2.5 min-w-0">
+        <button
+          onClick={() => setIsSidebarOpen(true)}
+          className="p-2 -ml-1 text-slate-700 hover:bg-slate-100 rounded-xl md:hidden shrink-0 cursor-pointer transition-all"
+          title="Buka Menu Sidebar"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+        <h2 className="text-base md:text-xl font-black text-slate-900 truncate tracking-tight">{title}</h2>
       </div>
 
-      <div className="flex items-center gap-3">
-        {/* Search Bar (Tampil jika props setSearchQuery dikirim) */}
-        {setSearchQuery && (
-          <div className="relative w-80">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
-            <input
-              type="text"
-              placeholder="Cari transaksi, pengguna, jasa..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#EEF2F6] border border-transparent rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-300 transition-all"
-            />
-          </div>
-        )}
+      {/* KANAN: SEARCH BAR (PRESISI CENTER) & NOTIFIKASI */}
+      <div className="flex items-center gap-2 md:gap-4 shrink-0">
+        {/* SEARCH BAR DENGAN POSISI IKON KACA PEMBESAR PAS DI TENGAH */}
+        <div className="relative hidden sm:flex items-center w-48 md:w-64">
+          <Search className="w-4 h-4 absolute left-3.5 text-slate-400 pointer-events-none shrink-0" />
+          <input
+            type="text"
+            placeholder="Cari transaksi, pengguna, jasa..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-2xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 shadow-xs transition-all leading-normal"
+          />
+        </div>
 
-        {/* Notifikasi Dropdown */}
-        <div className="relative shrink-0" ref={notificationRef}>
+        {/* NOTIFIKASI */}
+        <div className="relative" ref={notificationRef}>
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="relative p-2.5 bg-white border border-slate-200/80 rounded-xl hover:bg-slate-50 transition-colors text-slate-600 cursor-pointer shadow-xs flex items-center justify-center"
+            className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-2xl relative transition-all shadow-xs cursor-pointer flex items-center justify-center"
           >
             <Bell className="w-4 h-4" />
-            {notifications.some(n => n.unread) && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white animate-pulse" />
-            )}
+            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full" />
           </button>
-
+          
           {showNotifications && (
-            <NotificationDropdown
-              notifications={notifications}
-              onMarkAllRead={() => setNotifications(prev => prev.map(n => ({ ...n, unread: false })))}
-            />
+            <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white rounded-3xl shadow-2xl border border-slate-100 p-4 z-50 space-y-3">
+              <h4 className="font-extrabold text-xs text-slate-900">Notifikasi Terbaru</h4>
+              <div className="space-y-2">
+                {notifications.map(n => (
+                  <div key={n.id} className="p-2.5 bg-slate-50 rounded-2xl text-xs space-y-0.5">
+                    <p className="font-bold text-slate-800">{n.title}</p>
+                    <p className="text-[11px] text-slate-500">{n.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
 
-        {/* Status System */}
-        <div className="flex items-center gap-2 px-3.5 py-2 bg-[#DCFCE7] border border-[#BBF7D0] rounded-full text-[#15803D] text-xs font-bold shrink-0">
-          <span className="w-2 h-2 bg-[#22C55E] rounded-full animate-pulse" />
-          <span>System Active</span>
+        {/* SYSTEM STATUS BADGE */}
+        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full text-emerald-700 text-xs font-bold">
+          <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+          System Active
         </div>
       </div>
     </header>

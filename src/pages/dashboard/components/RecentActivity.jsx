@@ -5,7 +5,7 @@ const RecentActivity = ({ recentUsers, onNavigateUserManagement }) => {
   return (
     <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-6 space-y-5">
       <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
-        MANAJEMEN MAHASISWA & USER TERBARU
+        MANAJEMEN USER TERBARU
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {recentUsers.map((u) => (

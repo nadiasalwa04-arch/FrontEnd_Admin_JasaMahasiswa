@@ -1,23 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 
-// Import sesuai folder Landing (L kapital) & auth
 import LandingPage from './pages/Landing/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
 
-// Import sesuai folder (dashboard)
-import DashboardPage from './pages/(dashboard)/dashboard/DashboardPage';
-import ServiceModerationPage from './pages/(dashboard)/services/ServiceModerationPage';
-import TransactionVerificationPage from './pages/(dashboard)/transactions/TransactionVerificationPage';
-import UserManagementPage from './pages/(dashboard)/users/UserManagementPage';
-import SettingsPage from './pages/(dashboard)/settings/SettingsPage';
+import DashboardPage from './pages/dashboard/Page';
+import ServiceModerationPage from './pages/services/ServiceModerationPage';
+import TransactionVerificationPage from './pages/transactions/TransactionVerificationPage';
+import UserManagementPage from './pages/users/UserManagementPage';
+import SettingsPage from './pages/settings/SettingsPage';
 
 function AppContent() {
   const navigate = useNavigate();
-  // State sidebar disimpan di paling atas agar tidak reset saat pindah halaman
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // Auto-collapse sidebar halus saat jendela browser di-inspect / digeser ke ukuran tablet & HP
+  // Shared Data Services untuk menghitung pending count secara global
+  const [services, setServices] = useState([
+    { id: 1, title: 'Jasa Desain Poster & PPT Interaktif', status: 'PENDING' },
+    { id: 2, title: 'Jasa Olah Data SPSS & Analisis Statistik', status: 'PENDING' },
+    { id: 3, title: 'Jasa Koding Landing Page React & Tailwind', status: 'APPROVED' }
+  ]);
+
+  // Hitung berapa banyak pengajuan yang PENDING
+  const pendingServiceCount = services.filter(s => s.status === 'PENDING').length;
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 1024) {
@@ -26,30 +32,21 @@ function AppContent() {
         setIsSidebarOpen(true);
       }
     };
-
-    // Jalankan sekali saat pertama load
     handleResize();
-
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const commonProps = {
     isSidebarOpen,
-    setIsSidebarOpen
+    setIsSidebarOpen,
+    pendingServiceCount // <-- Badgenya sekarang selalu dikirim ke semua halaman!
   };
 
   return (
     <Routes>
-      <Route 
-        path="/" 
-        element={<LandingPage onNavigateToLogin={() => navigate('/login')} />} 
-      />
-      
-      <Route 
-        path="/login" 
-        element={<LoginPage onBack={() => navigate('/')} onLoginSuccess={() => navigate('/dashboard')} />} 
-      />
+      <Route path="/" element={<LandingPage onNavigateToLogin={() => navigate('/login')} />} />
+      <Route path="/login" element={<LoginPage onBack={() => navigate('/')} onLoginSuccess={() => navigate('/dashboard')} />} />
 
       <Route 
         path="/dashboard" 
@@ -70,6 +67,8 @@ function AppContent() {
         element={
           <ServiceModerationPage 
             {...commonProps}
+            services={services}
+            setServices={setServices}
             onNavigateDashboard={() => navigate('/dashboard')}
             onNavigateUserManagement={() => navigate('/manajemen-user')}
             onNavigateSettings={() => navigate('/pengaturan')}

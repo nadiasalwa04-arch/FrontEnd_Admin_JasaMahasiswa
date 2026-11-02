@@ -7,6 +7,7 @@ const AdminLayout = ({
   isSidebarOpen,
   setIsSidebarOpen,
   activeMenu,
+  pendingServiceCount = 0,
   title,
   searchQuery,
   setSearchQuery,
@@ -23,11 +24,11 @@ const AdminLayout = ({
 }) => {
   return (
     <div className="flex h-screen bg-[#F8FAFC] font-sans antialiased overflow-hidden w-full">
-      {/* SIDEBAR GEMINI COLLAPSIBLE */}
       <Sidebar
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
         activeMenu={activeMenu}
+        pendingServiceCount={pendingServiceCount}
         onNavigateDashboard={onNavigateDashboard}
         onNavigateTransactionVerification={onNavigateTransactionVerification}
         onNavigateServiceModeration={onNavigateServiceModeration}
@@ -35,7 +36,6 @@ const AdminLayout = ({
         onNavigateSettings={onNavigateSettings}
       />
 
-      {/* AREA UTAMA KONTEN (IKUT MELEBAR & MENYEPIK SECARA SMOOTH) */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300 ease-in-out">
         <Header
           title={title}
@@ -46,6 +46,7 @@ const AdminLayout = ({
           notifications={notifications}
           setNotifications={setNotifications}
           notificationRef={notificationRef}
+          setIsSidebarOpen={setIsSidebarOpen} // Pass ke Header untuk tombol garis 3
         />
 
         <main className="flex-1 overflow-y-auto">
