@@ -15,64 +15,54 @@ const UserManagementPage = ({
   onNavigateSettings = () => {}
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('ALL'); // 'ALL' | 'VERIFIED' | 'PENDING' | 'SUSPENDED'
+  const [activeTab, setActiveTab] = useState('ALL'); 
 
-  // Modal State
   const [selectedUser, setSelectedUser] = useState(null);
-  const [modalType, setModalType] = useState(null); // 'KTM' | 'SUSPEND' | null
+  const [modalType, setModalType] = useState(null); 
 
-  // Header Notifications State
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef(null);
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: 'Verifikasi KTM Baru', desc: 'Rian H. mengunggah KTM untuk verifikasi.', time: '15 mnt lalu', unread: true },
-  ]);
+  const [notifications, setNotifications] = useState([]);
 
-  // Data Dummy User Mahasiswa
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      name: 'Andi Pratama',
-      initials: 'AP',
-      email: 'andi.p@student.ui.ac.id',
-      univ: 'Universitas Indonesia',
-      major: 'Informatika',
-      joinedAt: '12 Jan 2026',
-      status: 'VERIFIED'
-    },
-    {
-      id: 2,
-      name: 'Rian Hidayat',
-      initials: 'RH',
-      email: 'rian.h@student.ub.ac.id',
-      univ: 'Universitas Brawijaya',
-      major: 'Teknik Mesin',
-      joinedAt: 'Kemarin, 14:20 WIB',
-      status: 'PENDING'
-    },
-    {
-      id: 3,
-      name: 'Arief Setiawan',
-      initials: 'AS',
-      email: 'arief.s@student.unesa.ac.id',
-      univ: 'Universitas Negeri Semarang',
-      major: 'DKV',
-      joinedAt: '05 Mar 2026',
-      status: 'VERIFIED'
-    },
-    {
-      id: 4,
-      name: 'Budi Setiawan',
-      initials: 'BS',
-      email: 'budi.s@student.ui.ac.id',
-      univ: 'Universitas Indonesia',
-      major: 'Sistem Informasi',
-      joinedAt: '10 Feb 2026',
-      status: 'SUSPENDED'
+  // 1. STATE KOSONG (Siap diisi data dari database)
+  const [users, setUsers] = useState([]);
+
+  // 2. FUNGSI MENARIK DATA USER DARI BACKEND
+  const fetchUsers = async () => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) return;
+
+    try {
+      const response = await fetch('http://localhost:3000/api/admin/users', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        // Memetakan data MySQL agar cocok dengan properti UI
+        const mappedUsers = result.data.map(u => ({
+          id: u.id,
+          name: u.nama,
+          initials: u.nama.substring(0, 2).toUpperCase(),
+          email: u.email,
+          univ: 'Universitas Brawijaya', // Placeholder
+          major: 'Mahasiswa',
+          joinedAt: new Date(u.created_at).toLocaleDateString('id-ID'),
+          // Konversi status database ke status UI
+          status: u.ktm_status === 'menunggu_verifikasi' ? 'PENDING' : 
+                  u.ktm_status === 'disetujui' ? 'VERIFIED' : 'SUSPENDED'
+        }));
+        setUsers(mappedUsers);
+      }
+    } catch (error) {
+      console.error("Gagal mengambil data user:", error);
     }
-  ]);
+  };
 
+  // Muat data saat halaman dibuka
   useEffect(() => {
+    fetchUsers();
+
     const handleClickOutside = (e) => {
       if (notificationRef.current && !notificationRef.current.contains(e.target)) {
         setShowNotifications(false);
@@ -92,31 +82,68 @@ const UserManagementPage = ({
     setModalType('SUSPEND');
   };
 
-  const handleApproveKTM = () => {
+  // 3. FUNGSI MENYETUJUI KTM KE BACKEND
+  const handleApproveKTM = async () => {
     if (!selectedUser) return;
-    setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, status: 'VERIFIED' } : u));
-    setModalType(null);
-    setSelectedUser(null);
+    const token = localStorage.getItem('adminToken');
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/admin/verify-ktm/${selectedUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: 'disetujui' })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        fetchUsers(); // Refresh tabel otomatis
+        setModalType(null);
+        setSelectedUser(null);
+      } else {
+        alert("Gagal: " + result.message);
+      }
+    } catch (error) {
+      console.error("Error verifikasi:", error);
+    }
   };
 
-  const handleConfirmSuspend = () => {
+  // 4. FUNGSI MENOLAK/MENANGGUHKAN KE BACKEND
+  const handleConfirmSuspend = async () => {
     if (!selectedUser) return;
-    setUsers(prev => prev.map(u => {
-      if (u.id === selectedUser.id) {
-        const nextStatus = u.status === 'SUSPENDED' ? 'VERIFIED' : 'SUSPENDED';
-        return { ...u, status: nextStatus };
+    const token = localStorage.getItem('adminToken');
+    
+    // Tentukan status berdasarkan posisi tombol saat ini
+    const statusToSend = selectedUser.status === 'SUSPENDED' ? 'disetujui' : 'ditolak';
+    const reason = statusToSend === 'ditolak' ? 'KTM tidak valid / Akun ditangguhkan admin' : null;
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/admin/verify-ktm/${selectedUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: statusToSend, reject_reason: reason })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        fetchUsers(); // Refresh tabel otomatis
+        setModalType(null);
+        setSelectedUser(null);
       }
-      return u;
-    }));
-    setModalType(null);
-    setSelectedUser(null);
+    } catch (error) {
+      console.error("Error suspend:", error);
+    }
   };
 
   const filteredUsers = users.filter(user => {
     const matchesTab = activeTab === 'ALL' || user.status === activeTab;
     const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          user.univ.toLowerCase().includes(searchQuery.toLowerCase());
+                          user.email.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesTab && matchesSearch;
   });
 
@@ -143,7 +170,6 @@ const UserManagementPage = ({
       onNavigateSettings={onNavigateSettings}
     >
       <div className="p-4 sm:p-6 md:p-8 space-y-6">
-        {/* STATS HEADER CARDS RESPONSIVE */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           <div className="bg-[#FEF9C3]/80 border border-yellow-200 p-5 rounded-3xl shadow-xs flex justify-between items-start">
             <div>
@@ -168,10 +194,7 @@ const UserManagementPage = ({
           </div>
         </div>
 
-        {/* CONTAINER UTAMA TABEL */}
         <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-4 sm:p-6 space-y-6">
-          
-          {/* TAB FILTER (SCROLLABLE ON MOBILE) */}
           <div className="flex border-b border-slate-100 gap-4 sm:gap-8 overflow-x-auto pb-1 text-xs">
             {[
               { id: 'ALL', label: 'Semua User' },
@@ -191,7 +214,6 @@ const UserManagementPage = ({
             ))}
           </div>
 
-          {/* SUB-KOMPONEN USERTABLE */}
           {filteredUsers.length > 0 ? (
             <UserTable 
               users={filteredUsers}
@@ -207,7 +229,6 @@ const UserManagementPage = ({
         </div>
       </div>
 
-      {/* SUB-KOMPONEN MODAL VERIFIKASI KTM */}
       {modalType === 'KTM' && selectedUser && (
         <KtmVerifyModal
           selectedUser={selectedUser}
@@ -220,7 +241,6 @@ const UserManagementPage = ({
         />
       )}
 
-      {/* MODAL SUSPEND / AKTIFKAN AKUN */}
       {modalType === 'SUSPEND' && selectedUser && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
@@ -255,7 +275,7 @@ const UserManagementPage = ({
                     : 'bg-red-600 hover:bg-red-700 shadow-md shadow-red-500/20'
                 }`}
               >
-                {selectedUser.status === 'SUSPENDED' ? 'Ya, Aktifkan' : 'Ya, Suspend'}
+                {selectedUser.status === 'SUSPENDED' ? 'Ya, Aktifkan' : 'Ya, Tolak / Suspend'}
               </button>
             </div>
           </div>

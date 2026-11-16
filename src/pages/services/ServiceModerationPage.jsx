@@ -8,9 +8,7 @@ import ServiceDetailModal from './components/ServiceDetailModal';
 const ServiceModerationPage = ({
   isSidebarOpen,
   setIsSidebarOpen,
-  pendingServiceCount,
-  services = [],       // Menerima dari App.jsx
-  setServices,        // Menerima dari App.jsx
+  pendingServiceCount = 0,
   onNavigateDashboard = () => {},
   onNavigateTransactionVerification = () => {},
   onNavigateServiceModeration = () => {},
@@ -18,21 +16,47 @@ const ServiceModerationPage = ({
   onNavigateSettings = () => {}
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('PENDING'); // 'PENDING' | 'APPROVED' | 'REJECTED'
+  const [activeTab, setActiveTab] = useState('PENDING'); 
 
-  // Modal State
   const [selectedService, setSelectedService] = useState(null);
-  const [modalStep, setModalStep] = useState(null); // 'REVIEW' | 'REJECT_FORM' | null
+  const [modalStep, setModalStep] = useState(null); 
 
-  // Header Notifications State
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef(null);
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: 'Moderasi Jasa Baru', desc: 'Arief S. mengajukan jasa "Desain Poster & PPT".', time: '10 mnt lalu', unread: true },
-    { id: 2, title: 'Pengajuan Jasa', desc: 'Maya R. mengajukan jasa "Olah Data SPSS".', time: '1 jam lalu', unread: true },
-  ]);
+  const [notifications, setNotifications] = useState([]);
+
+  // STATE SERVICES DARI DATABASE
+  const [services, setServices] = useState([]);
+
+  // FUNGSI FETCH SERVICES DARI BACKEND
+  const fetchServices = async () => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) return;
+
+    try {
+      const response = await fetch('http://localhost:3000/api/admin/services/pending', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        const mappedServices = result.data.map(s => ({
+          id: s.id,
+          title: s.judul_jasa,
+          author: `Oleh: ${s.penulis || 'Mahasiswa'}`,
+          status: s.status ? s.status.toUpperCase() : 'PENDING',
+          colorBg: 'bg-blue-500'
+        }));
+        setServices(mappedServices);
+      }
+    } catch (error) {
+      console.error("Gagal mengambil data moderasi jasa:", error);
+    }
+  };
 
   useEffect(() => {
+    fetchServices();
+
     const handleClickOutside = (e) => {
       if (notificationRef.current && !notificationRef.current.contains(e.target)) {
         setShowNotifications(false);
@@ -48,14 +72,14 @@ const ServiceModerationPage = ({
   };
 
   const handleApproveService = () => {
-    if (!selectedService || !setServices) return;
+    if (!selectedService) return;
     setServices(prev => prev.map(s => s.id === selectedService.id ? { ...s, status: 'APPROVED' } : s));
     setModalStep(null);
     setSelectedService(null);
   };
 
   const handleRejectService = (reason, note) => {
-    if (!selectedService || !setServices) return;
+    if (!selectedService) return;
     setServices(prev => prev.map(s => s.id === selectedService.id ? { ...s, status: 'REJECTED', rejectReason: reason, rejectNote: note } : s));
     setModalStep(null);
     setSelectedService(null);
@@ -91,7 +115,6 @@ const ServiceModerationPage = ({
       onNavigateSettings={onNavigateSettings}
     >
       <div className="p-4 sm:p-6 md:p-8 space-y-6">
-        {/* STATS HEADER */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-[#FEF9C3]/80 border border-yellow-200 p-6 rounded-2xl shadow-xs flex justify-between items-start">
             <div>
@@ -116,7 +139,6 @@ const ServiceModerationPage = ({
           </div>
         </div>
 
-        {/* TAB FILTER & CONTAINER LIST */}
         <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-6 space-y-6">
           <div className="flex border-b border-slate-100 gap-8 overflow-x-auto">
             <button
@@ -145,7 +167,6 @@ const ServiceModerationPage = ({
             </button>
           </div>
 
-          {/* LIST JASA DENGAN SERVICE CARD */}
           {filteredServices.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredServices.map(service => (
@@ -166,7 +187,6 @@ const ServiceModerationPage = ({
         </div>
       </div>
 
-      {/* SUB-KOMPONEN MODAL DETAIL & REJECT */}
       {modalStep === 'REVIEW' && selectedService && (
         <ServiceDetailModal
           selectedService={selectedService}

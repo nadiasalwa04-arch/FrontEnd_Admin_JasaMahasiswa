@@ -1,14 +1,21 @@
 import React, { useRef } from 'react';
 import { Upload, Lock } from 'lucide-react';
 
-const ProfileForm = ({ profile, setProfile }) => {
+const ProfileForm = ({ profile, setProfile, onSave }) => {
   const fileInputRef = useRef(null);
 
   const handleImageUpload = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setProfile({ ...profile, avatarUrl: imageUrl });
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Ukuran foto maksimal 2MB!');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfile({ ...profile, avatarUrl: reader.result });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -93,7 +100,11 @@ const ProfileForm = ({ profile, setProfile }) => {
         </div>
       </div>
 
-      <button className="w-full py-2.5 bg-[#0F172A] hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer mt-2">
+      <button 
+        type="button"
+        onClick={onSave}
+        className="w-full py-2.5 bg-[#0F172A] hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer mt-2"
+      >
         Simpan Profil
       </button>
     </div>

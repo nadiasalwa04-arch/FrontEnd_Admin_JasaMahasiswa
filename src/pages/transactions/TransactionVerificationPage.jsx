@@ -16,57 +16,52 @@ const TransactionVerificationPage = ({
   onNavigateSettings = () => {}
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('ALL'); // 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'
+  const [activeTab, setActiveTab] = useState('ALL'); 
 
-  // Modal State
   const [selectedTrx, setSelectedTrx] = useState(null);
-  const [activeModal, setActiveModal] = useState(null); // 'VERIFY' | 'REJECT' | 'CHAT' | null
+  const [activeModal, setActiveModal] = useState(null); 
 
-  // Notifications Header State
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef(null);
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: 'Pembayaran Masuk', desc: 'Siti A. melakukan pembayaran #TRX-8821', time: '5 mnt lalu', unread: true },
-  ]);
+  const [notifications, setNotifications] = useState([]);
 
-  // Data Dummy Transaksi
-  const [transactions, setTransactions] = useState([
-    {
-      id: '#TRX-8821',
-      fullId: 'TRX-8821-2026',
-      title: 'Jasa Web React & Tailwind (E-Wallet)',
-      serviceName: 'Jasa Web React & Tailwind',
-      buyer: 'Siti A.',
-      seller: 'Budi S.',
-      amount: 'Rp 77.000',
-      status: 'Pending',
-      bank: 'GoPay / QRIS'
-    },
-    {
-      id: '#TRX-8820',
-      fullId: 'TRX-8820-2026',
-      title: 'Pencairan Saldo Bank BCA (a.n Andi)',
-      serviceName: 'Pencairan Saldo Bank BCA',
-      buyer: 'Andi P.',
-      seller: 'Platform',
-      amount: 'Rp 150.000',
-      status: 'Ditolak',
-      bank: 'Transfer Bank BCA'
-    },
-    {
-      id: '#TRX-8819',
-      fullId: 'TRX-8819-2026',
-      title: 'Jasa Desain Poster (QRIS)',
-      serviceName: 'Jasa Desain Poster',
-      buyer: 'Budi S.',
-      seller: 'Arief S.',
-      amount: 'Rp 35.000',
-      status: 'Selesai',
-      bank: 'QRIS Auto'
+  // STATE TRANSAKSI DARI DATABASE
+  const [transactions, setTransactions] = useState([]);
+
+  // FUNGSI FETCH TRANSAKSI DARI BACKEND
+  const fetchTransactions = async () => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) return;
+
+    try {
+      const response = await fetch('http://localhost:3000/api/admin/transactions', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        // Mapping data MySQL agar sesuai dengan properti UI
+        const mappedTrx = result.data.map(t => ({
+          id: `#TRX-${t.id}`,
+          fullId: `TRX-${t.id}-2026`,
+          title: t.deskripsi_transaksi || 'Jasa Mahasiswa',
+          serviceName: 'Layanan Jasa',
+          buyer: t.buyer_name || 'Mahasiswa',
+          seller: t.seller_name || 'Provider',
+          amount: `Rp ${Number(t.amount || 0).toLocaleString('id-ID')}`,
+          status: t.status === 'pending' ? 'Pending' : t.status === 'selesai' ? 'Selesai' : 'Ditolak',
+          bank: t.metode_pembayaran || 'QRIS'
+        }));
+        setTransactions(mappedTrx);
+      }
+    } catch (error) {
+      console.error("Gagal mengambil data transaksi:", error);
     }
-  ]);
+  };
 
   useEffect(() => {
+    fetchTransactions();
+
     const handleClickOutside = (e) => {
       if (notificationRef.current && !notificationRef.current.contains(e.target)) {
         setShowNotifications(false);
@@ -127,7 +122,6 @@ const TransactionVerificationPage = ({
       onNavigateSettings={onNavigateSettings}
     >
       <div className="p-4 sm:p-6 md:p-8 space-y-6">
-        {/* KARTU STATISTIK */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           <div className="bg-[#FEF9C3]/80 border border-yellow-200 p-5 rounded-3xl shadow-xs flex justify-between items-start">
             <div>
@@ -148,10 +142,7 @@ const TransactionVerificationPage = ({
           </div>
         </div>
 
-        {/* CONTAINER UTAMA TABEL */}
         <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-4 sm:p-6 space-y-6">
-          
-          {/* TAB FILTER */}
           <div className="flex border-b border-slate-100 gap-4 sm:gap-8 overflow-x-auto pb-1 text-xs">
             {[
               { id: 'ALL', label: 'Semua Transaksi' },
@@ -171,7 +162,6 @@ const TransactionVerificationPage = ({
             ))}
           </div>
 
-          {/* MENAMPILKAN SUB-KOMPONEN TRANSACTIONTABLE */}
           {filteredTrx.length > 0 ? (
             <TransactionTable 
               filteredTrx={filteredTrx}
@@ -187,7 +177,6 @@ const TransactionVerificationPage = ({
         </div>
       </div>
 
-      {/* SUB-KOMPONEN MODAL VERIFIKASI */}
       {activeModal === 'VERIFY' && selectedTrx && (
         <VerifyPaymentModal
           selectedTrx={selectedTrx}
@@ -196,7 +185,6 @@ const TransactionVerificationPage = ({
         />
       )}
 
-      {/* SUB-KOMPONEN MODAL CHAT */}
       {activeModal === 'CHAT' && selectedTrx && (
         <ChatPreviewModal
           selectedTrx={selectedTrx}

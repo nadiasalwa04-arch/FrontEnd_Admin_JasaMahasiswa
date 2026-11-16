@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Info, Eye, EyeOff } from 'lucide-react';
 
-const SecurityForm = ({ passwords, setPasswords }) => {
+const SecurityForm = ({ passwords, setPasswords, onSave }) => {
   const [showCurrentPass, setShowCurrentPass] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
@@ -83,7 +83,11 @@ const SecurityForm = ({ passwords, setPasswords }) => {
         </div>
       </div>
 
-      <button className="w-full py-2.5 bg-[#2563EB] hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer mt-2">
+      <button 
+        type="button"
+        onClick={onSave}
+        className="w-full py-2.5 bg-[#2563EB] hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer mt-2"
+      >
         Perbarui Password
       </button>
     </div>
