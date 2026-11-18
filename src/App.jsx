@@ -13,18 +13,32 @@ import SettingsPage from './pages/settings/SettingsPage';
 function AppContent() {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [pendingServiceCount, setPendingServiceCount] = useState(0);
 
-  // Shared Data Services untuk menghitung pending count secara global
-  const [services, setServices] = useState([
-    { id: 1, title: 'Jasa Desain Poster & PPT Interaktif', status: 'PENDING' },
-    { id: 2, title: 'Jasa Olah Data SPSS & Analisis Statistik', status: 'PENDING' },
-    { id: 3, title: 'Jasa Koding Landing Page React & Tailwind', status: 'APPROVED' }
-  ]);
-
-  // Hitung berapa banyak pengajuan yang PENDING
-  const pendingServiceCount = services.filter(s => s.status === 'PENDING').length;
+  // Ambil jumlah jasa yang menunggu moderasi secara global dari database
+  const fetchPendingServiceCount = async () => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) return;
+    try {
+      const response = await fetch('http://localhost:3000/api/admin/services', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const result = await response.json();
+      if (result.success) {
+        const count = result.data.filter(s => {
+          const st = (s.status || '').toLowerCase();
+          return st === 'ditinjau' || st === 'pending';
+        }).length;
+        setPendingServiceCount(count);
+      }
+    } catch (error) {
+      console.error('Gagal mengambil jumlah jasa pending:', error);
+    }
+  };
 
   useEffect(() => {
+    fetchPendingServiceCount();
+
     const handleResize = () => {
       if (window.innerWidth < 1024) {
         setIsSidebarOpen(false);
@@ -40,62 +54,29 @@ function AppContent() {
   const commonProps = {
     isSidebarOpen,
     setIsSidebarOpen,
-    pendingServiceCount // <-- Badgenya sekarang selalu dikirim ke semua halaman!
+    pendingServiceCount
   };
 
   return (
     <Routes>
       <Route path="/" element={<LandingPage onNavigateToLogin={() => navigate('/login')} />} />
-      <Route path="/login" element={<LoginPage onBack={() => navigate('/')} onLoginSuccess={() => navigate('/dashboard')} />} />
-
-      <Route 
-        path="/dashboard" 
+      <Route
+        path="/login"
         element={
-          <DashboardPage 
-            {...commonProps}
-            onNavigateDashboard={() => navigate('/dashboard')}
-            onNavigateUserManagement={() => navigate('/manajemen-user')} 
-            onNavigateSettings={() => navigate('/pengaturan')}
-            onNavigateTransactionVerification={() => navigate('/verifikasi-transaksi')}
-            onNavigateServiceModeration={() => navigate('/moderasi-jasa')}
+          <LoginPage
+            onBack={() => navigate('/')}
+            onLoginSuccess={() => {
+              fetchPendingServiceCount();
+              navigate('/dashboard');
+            }}
           />
-        } 
+        }
       />
 
-      <Route 
-        path="/moderasi-jasa" 
+      <Route
+        path="/dashboard"
         element={
-          <ServiceModerationPage 
-            {...commonProps}
-            services={services}
-            setServices={setServices}
-            onNavigateDashboard={() => navigate('/dashboard')}
-            onNavigateUserManagement={() => navigate('/manajemen-user')}
-            onNavigateSettings={() => navigate('/pengaturan')}
-            onNavigateTransactionVerification={() => navigate('/verifikasi-transaksi')}
-            onNavigateServiceModeration={() => navigate('/moderasi-jasa')}
-          />
-        } 
-      />
-
-      <Route 
-        path="/verifikasi-transaksi" 
-        element={
-          <TransactionVerificationPage 
-            {...commonProps}
-            onNavigateDashboard={() => navigate('/dashboard')}
-            onNavigateUserManagement={() => navigate('/manajemen-user')}
-            onNavigateSettings={() => navigate('/pengaturan')}
-            onNavigateServiceModeration={() => navigate('/moderasi-jasa')}
-            onNavigateTransactionVerification={() => navigate('/verifikasi-transaksi')}
-          />
-        } 
-      />
-
-      <Route 
-        path="/manajemen-user" 
-        element={
-          <UserManagementPage 
+          <DashboardPage
             {...commonProps}
             onNavigateDashboard={() => navigate('/dashboard')}
             onNavigateUserManagement={() => navigate('/manajemen-user')}
@@ -103,13 +84,42 @@ function AppContent() {
             onNavigateTransactionVerification={() => navigate('/verifikasi-transaksi')}
             onNavigateServiceModeration={() => navigate('/moderasi-jasa')}
           />
-        } 
+        }
       />
 
-      <Route 
-        path="/pengaturan" 
+      <Route
+        path="/moderasi-jasa"
         element={
-          <SettingsPage 
+          <ServiceModerationPage
+            {...commonProps}
+            setPendingServiceCount={setPendingServiceCount}
+            onNavigateDashboard={() => navigate('/dashboard')}
+            onNavigateUserManagement={() => navigate('/manajemen-user')}
+            onNavigateSettings={() => navigate('/pengaturan')}
+            onNavigateTransactionVerification={() => navigate('/verifikasi-transaksi')}
+            onNavigateServiceModeration={() => navigate('/moderasi-jasa')}
+          />
+        }
+      />
+
+      <Route
+        path="/verifikasi-transaksi"
+        element={
+          <TransactionVerificationPage
+            {...commonProps}
+            onNavigateDashboard={() => navigate('/dashboard')}
+            onNavigateUserManagement={() => navigate('/manajemen-user')}
+            onNavigateSettings={() => navigate('/pengaturan')}
+            onNavigateServiceModeration={() => navigate('/moderasi-jasa')}
+            onNavigateTransactionVerification={() => navigate('/verifikasi-transaksi')}
+          />
+        }
+      />
+
+      <Route
+        path="/manajemen-user"
+        element={
+          <UserManagementPage
             {...commonProps}
             onNavigateDashboard={() => navigate('/dashboard')}
             onNavigateUserManagement={() => navigate('/manajemen-user')}
@@ -117,7 +127,21 @@ function AppContent() {
             onNavigateTransactionVerification={() => navigate('/verifikasi-transaksi')}
             onNavigateServiceModeration={() => navigate('/moderasi-jasa')}
           />
-        } 
+        }
+      />
+
+      <Route
+        path="/pengaturan"
+        element={
+          <SettingsPage
+            {...commonProps}
+            onNavigateDashboard={() => navigate('/dashboard')}
+            onNavigateUserManagement={() => navigate('/manajemen-user')}
+            onNavigateSettings={() => navigate('/pengaturan')}
+            onNavigateTransactionVerification={() => navigate('/verifikasi-transaksi')}
+            onNavigateServiceModeration={() => navigate('/moderasi-jasa')}
+          />
+        }
       />
     </Routes>
   );

@@ -25,33 +25,57 @@ const TransactionVerificationPage = ({
   const notificationRef = useRef(null);
   const [notifications, setNotifications] = useState([]);
 
-  // STATE TRANSAKSI DARI DATABASE
+  // STATE TRANSAKSI & TOTAL USER DARI DATABASE
   const [transactions, setTransactions] = useState([]);
+  const [totalUsers, setTotalUsers] = useState(0);
 
-  // FUNGSI FETCH TRANSAKSI DARI BACKEND
+  // FUNGSI FETCH TRANSAKSI & STATISTIK USER DARI BACKEND
   const fetchTransactions = async () => {
     const token = localStorage.getItem('adminToken');
     if (!token) return;
 
     try {
-      const response = await fetch('http://localhost:3000/api/admin/transactions', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const result = await response.json();
+      const [trxRes, statsRes] = await Promise.all([
+        fetch('http://localhost:3000/api/admin/transactions', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch('http://localhost:3000/api/admin/stats', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+      ]);
+
+      const result = await trxRes.json();
+      const statsResult = await statsRes.json();
+
+      if (statsResult.success && statsResult.data) {
+        setTotalUsers(statsResult.data.totalUsers || 0);
+      }
       
       if (result.success) {
-        // Mapping data MySQL agar sesuai dengan properti UI
-        const mappedTrx = result.data.map(t => ({
-          id: `#TRX-${t.id}`,
-          fullId: `TRX-${t.id}-2026`,
-          title: t.deskripsi_transaksi || 'Jasa Mahasiswa',
-          serviceName: 'Layanan Jasa',
-          buyer: t.buyer_name || 'Mahasiswa',
-          seller: t.seller_name || 'Provider',
-          amount: `Rp ${Number(t.amount || 0).toLocaleString('id-ID')}`,
-          status: t.status === 'pending' ? 'Pending' : t.status === 'selesai' ? 'Selesai' : 'Ditolak',
-          bank: t.metode_pembayaran || 'QRIS'
-        }));
+        const mappedTrx = result.data.map(t => {
+          const rawNominal = Number(t.total_harga || t.harga || t.service_price || t.total_price || t.amount || 0);
+          const rawStatus = (t.status || '').toLowerCase();
+          
+          let mappedStatus = 'Pending';
+          if (rawStatus === 'selesai' || rawStatus === 'completed' || rawStatus === 'approved') {
+            mappedStatus = 'Selesai';
+          } else if (rawStatus === 'ditolak' || rawStatus === 'rejected' || rawStatus === 'cancelled') {
+            mappedStatus = 'Ditolak';
+          }
+
+          return {
+            id: `#TRX-${t.id}`,
+            fullId: `TRX-${t.id}-2026`,
+            title: t.service_title || t.deskripsi_transaksi || 'Pesanan Jasa Mahasiswa',
+            serviceName: t.service_title || 'Layanan Jasa',
+            buyer: t.buyer_name || 'Mahasiswa',
+            seller: t.seller_name || 'Provider',
+            rawAmount: rawNominal,
+            amount: `Rp ${rawNominal.toLocaleString('id-ID')}`,
+            status: mappedStatus,
+            bank: t.payment_method || t.metode_pembayaran || 'QRIS'
+          };
+        });
         setTransactions(mappedTrx);
       }
     } catch (error) {
@@ -100,6 +124,7 @@ const TransactionVerificationPage = ({
   });
 
   const pendingCount = transactions.filter(t => t.status === 'Pending').length;
+  const totalOmset = transactions.reduce((sum, t) => sum + (t.rawAmount || 0), 0);
 
   return (
     <AdminLayout
@@ -133,12 +158,14 @@ const TransactionVerificationPage = ({
 
           <div className="bg-white border border-slate-200/80 p-5 rounded-3xl shadow-xs">
             <span className="text-xs font-bold text-slate-400 block mb-1">Mahasiswa Terdaftar</span>
-            <div className="text-2xl md:text-3xl font-black text-slate-900">142 User</div>
+            <div className="text-2xl md:text-3xl font-black text-slate-900">{totalUsers} User</div>
           </div>
 
           <div className="bg-white border border-slate-200/80 p-5 rounded-3xl shadow-xs sm:col-span-2 lg:col-span-1">
             <span className="text-xs font-bold text-slate-400 block mb-1">Total Omset Platform</span>
-            <div className="text-2xl md:text-3xl font-black text-emerald-600">Rp 12.450.000</div>
+            <div className="text-2xl md:text-3xl font-black text-emerald-600">
+              Rp {totalOmset.toLocaleString('id-ID')}
+            </div>
           </div>
         </div>
 

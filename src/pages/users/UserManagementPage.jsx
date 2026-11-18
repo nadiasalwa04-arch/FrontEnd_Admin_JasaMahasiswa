@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { AlertCircle, ShieldAlert } from 'lucide-react';
+import { Search, ChevronDown, AlertTriangle } from 'lucide-react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import UserTable from './components/UserTable';
 import KtmVerifyModal from './components/KtmVerifyModal';
@@ -15,51 +15,88 @@ const UserManagementPage = ({
   onNavigateSettings = () => {}
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('ALL'); 
-
+  const [roleFilter, setRoleFilter] = useState('ALL');
   const [selectedUser, setSelectedUser] = useState(null);
-  const [modalType, setModalType] = useState(null); 
 
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef(null);
   const [notifications, setNotifications] = useState([]);
 
-  // 1. STATE KOSONG (Siap diisi data dari database)
+  // STATE DATA PENGGUNA DARI DATABASE
   const [users, setUsers] = useState([]);
 
-  // 2. FUNGSI MENARIK DATA USER DARI BACKEND
+  const mapKtmStatusToUi = (ktmStatus, role) => {
+    if (role === 'umum' || role === 'klien_umum') return 'Aktif';
+    const st = (ktmStatus || '').toLowerCase();
+    if (st === 'disetujui' || st === 'terverifikasi') return 'Terverifikasi';
+    if (st === 'ditolak') return 'Ditolak';
+    if (st === 'unggah_ulang' || st === 'unggah ulang') return 'Unggah Ulang';
+    return 'Pending';
+  };
+
+  const mapRoleToUi = (role) => {
+    const r = (role || '').toLowerCase();
+    if (r === 'penyedia_jasa' || r === 'seller') return 'Penyedia Jasa';
+    if (r === 'umum' || r === 'klien_umum') return 'Klien Umum';
+    if (r === 'klien' || r === 'buyer') return 'Klien';
+    return 'Penyedia Jasa';
+  };
+
   const fetchUsers = async () => {
     const token = localStorage.getItem('adminToken');
     if (!token) return;
 
     try {
       const response = await fetch('http://localhost:3000/api/admin/users', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
       const result = await response.json();
-      
-      if (result.success) {
-        // Memetakan data MySQL agar cocok dengan properti UI
-        const mappedUsers = result.data.map(u => ({
-          id: u.id,
-          name: u.nama,
-          initials: u.nama.substring(0, 2).toUpperCase(),
-          email: u.email,
-          univ: 'Universitas Brawijaya', // Placeholder
-          major: 'Mahasiswa',
-          joinedAt: new Date(u.created_at).toLocaleDateString('id-ID'),
-          // Konversi status database ke status UI
-          status: u.ktm_status === 'menunggu_verifikasi' ? 'PENDING' : 
-                  u.ktm_status === 'disetujui' ? 'VERIFIED' : 'SUSPENDED'
-        }));
+
+      if (result.success && Array.isArray(result.data)) {
+        const mappedUsers = result.data
+          .filter((u) => (u.role || '').toLowerCase() !== 'admin')
+          .map((u) => {
+            const uiRole = mapRoleToUi(u.role);
+            const uiStatus = mapKtmStatusToUi(u.ktm_status, u.role);
+            const nama = u.nama || 'Mahasiswa';
+            const initials = nama
+              .split(' ')
+              .slice(0, 2)
+              .map((n) => n[0])
+              .join('')
+              .toUpperCase();
+
+            return {
+              id: u.id,
+              initials: initials || 'US',
+              name: nama,
+              email: u.email || '-',
+              institution: u.jurusan || u.universitas || u.institution || 'Universitas Brawijaya',
+              campusHeader: (u.universitas || 'UNIVERSITAS BRAWIJAYA').toUpperCase(),
+              nim: u.nim || '-',
+              faculty: u.fakultas || 'Fakultas Vokasi',
+              major: u.jurusan || 'Teknologi Informasi',
+              phone: u.no_hp || u.phone || '-',
+              role: uiRole,
+              status: uiStatus,
+              ktmUrl: u.ktm_url ? `http://localhost:3000${u.ktm_url}` : null,
+              uploadedAt: u.created_at
+                ? new Date(u.created_at).toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                  })
+                : '-',
+              note: u.ktm_note || ''
+            };
+          });
         setUsers(mappedUsers);
       }
     } catch (error) {
-      console.error("Gagal mengambil data user:", error);
+      console.error('Gagal mengambil data pengguna:', error);
     }
   };
 
-  // Muat data saat halaman dibuka
   useEffect(() => {
     fetchUsers();
 
@@ -72,82 +109,27 @@ const UserManagementPage = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleOpenKtmModal = (user) => {
-    setSelectedUser(user);
-    setModalType('KTM');
+  const handleUpdateUser = (updatedUser) => {
+    setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+    setSelectedUser(updatedUser);
   };
 
-  const handleOpenSuspendModal = (user) => {
-    setSelectedUser(user);
-    setModalType('SUSPEND');
-  };
+  // STATISTIK REAL-TIME DARI DATABASE
+  const totalUsersCount = users.length;
+  const totalVerifiedDisplay = users.filter((u) => u.status === 'Terverifikasi').length;
+  const totalPendingDisplay = users.filter(
+    (u) => u.status === 'Pending' || u.status === 'Unggah Ulang'
+  ).length;
 
-  // 3. FUNGSI MENYETUJUI KTM KE BACKEND
-  const handleApproveKTM = async () => {
-    if (!selectedUser) return;
-    const token = localStorage.getItem('adminToken');
-
-    try {
-      const response = await fetch(`http://localhost:3000/api/admin/verify-ktm/${selectedUser.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ status: 'disetujui' })
-      });
-      
-      const result = await response.json();
-      if (result.success) {
-        fetchUsers(); // Refresh tabel otomatis
-        setModalType(null);
-        setSelectedUser(null);
-      } else {
-        alert("Gagal: " + result.message);
-      }
-    } catch (error) {
-      console.error("Error verifikasi:", error);
-    }
-  };
-
-  // 4. FUNGSI MENOLAK/MENANGGUHKAN KE BACKEND
-  const handleConfirmSuspend = async () => {
-    if (!selectedUser) return;
-    const token = localStorage.getItem('adminToken');
-    
-    // Tentukan status berdasarkan posisi tombol saat ini
-    const statusToSend = selectedUser.status === 'SUSPENDED' ? 'disetujui' : 'ditolak';
-    const reason = statusToSend === 'ditolak' ? 'KTM tidak valid / Akun ditangguhkan admin' : null;
-
-    try {
-      const response = await fetch(`http://localhost:3000/api/admin/verify-ktm/${selectedUser.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ status: statusToSend, reject_reason: reason })
-      });
-      
-      const result = await response.json();
-      if (result.success) {
-        fetchUsers(); // Refresh tabel otomatis
-        setModalType(null);
-        setSelectedUser(null);
-      }
-    } catch (error) {
-      console.error("Error suspend:", error);
-    }
-  };
-
-  const filteredUsers = users.filter(user => {
-    const matchesTab = activeTab === 'ALL' || user.status === activeTab;
-    const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesTab && matchesSearch;
+  const filteredUsers = users.filter((user) => {
+    const matchesRole = roleFilter === 'ALL' || user.role === roleFilter;
+    const query = searchQuery.toLowerCase();
+    const matchesSearch =
+      user.name.toLowerCase().includes(query) ||
+      user.institution.toLowerCase().includes(query) ||
+      user.email.toLowerCase().includes(query);
+    return matchesRole && matchesSearch;
   });
-
-  const pendingVerificationCount = users.filter(u => u.status === 'PENDING').length;
 
   return (
     <AdminLayout
@@ -155,7 +137,7 @@ const UserManagementPage = ({
       setIsSidebarOpen={setIsSidebarOpen}
       activeMenu="user-management"
       pendingServiceCount={pendingServiceCount}
-      title="Manajemen User Mahasiswa"
+      title={selectedUser ? 'Cek Dokumen/KTM' : 'Manajemen User'}
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
       showNotifications={showNotifications}
@@ -166,121 +148,84 @@ const UserManagementPage = ({
       onNavigateDashboard={onNavigateDashboard}
       onNavigateTransactionVerification={onNavigateTransactionVerification}
       onNavigateServiceModeration={onNavigateServiceModeration}
-      onNavigateUserManagement={onNavigateUserManagement}
+      onNavigateUserManagement={() => {
+        setSelectedUser(null);
+        onNavigateUserManagement();
+      }}
       onNavigateSettings={onNavigateSettings}
     >
       <div className="p-4 sm:p-6 md:p-8 space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          <div className="bg-[#FEF9C3]/80 border border-yellow-200 p-5 rounded-3xl shadow-xs flex justify-between items-start">
-            <div>
-              <span className="text-xs font-extrabold text-amber-900 block mb-1">Perlu Verifikasi KTM</span>
-              <div className="text-2xl md:text-3xl font-black text-amber-900">{pendingVerificationCount} Mahasiswa</div>
-            </div>
-            <span className="px-2.5 py-1 bg-amber-200 text-amber-900 text-[10px] font-bold rounded-xl shrink-0">Butuh Aksi</span>
-          </div>
+        {selectedUser ? (
+          <KtmVerifyModal
+            selectedUser={selectedUser}
+            onBack={() => setSelectedUser(null)}
+            onUpdateUser={handleUpdateUser}
+          />
+        ) : (
+          <>
+            {/* BARIS PENCARIAN & FILTER ROLE */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                Manajemen User
+              </h1>
 
-          <div className="bg-white border border-slate-200/80 p-5 rounded-3xl shadow-xs">
-            <span className="text-xs font-bold text-slate-400 block mb-1">Total Mahasiswa Aktif</span>
-            <div className="text-2xl md:text-3xl font-black text-slate-900">
-              {users.filter(u => u.status === 'VERIFIED').length} User
-            </div>
-          </div>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div className="relative flex items-center w-full sm:w-64">
+                  <Search className="w-4 h-4 absolute left-3.5 text-slate-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Cari nama, universitas, email..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#2563EB] shadow-2xs transition-all"
+                  />
+                </div>
 
-          <div className="bg-white border border-slate-200/80 p-5 rounded-3xl shadow-xs sm:col-span-2 lg:col-span-1">
-            <span className="text-xs font-bold text-slate-400 block mb-1">Akun Ditangguhkan</span>
-            <div className="text-2xl md:text-3xl font-black text-red-600">
-              {users.filter(u => u.status === 'SUSPENDED').length} User
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-4 sm:p-6 space-y-6">
-          <div className="flex border-b border-slate-100 gap-4 sm:gap-8 overflow-x-auto pb-1 text-xs">
-            {[
-              { id: 'ALL', label: 'Semua User' },
-              { id: 'VERIFIED', label: 'Terverifikasi' },
-              { id: 'PENDING', label: `Perlu Verifikasi (${pendingVerificationCount})` },
-              { id: 'SUSPENDED', label: 'Ditangguhkan' },
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`pb-3 font-extrabold whitespace-nowrap transition-all cursor-pointer relative ${
-                  activeTab === tab.id ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {filteredUsers.length > 0 ? (
-            <UserTable 
-              users={filteredUsers}
-              handleOpenKtmModal={handleOpenKtmModal}
-              handleOpenSuspendModal={handleOpenSuspendModal}
-            />
-          ) : (
-            <div className="py-12 text-center space-y-2">
-              <AlertCircle className="w-10 h-10 text-slate-300 mx-auto" />
-              <h4 className="text-sm font-bold text-slate-700">Tidak ada user ditemukan</h4>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {modalType === 'KTM' && selectedUser && (
-        <KtmVerifyModal
-          selectedUser={selectedUser}
-          onClose={() => {
-            setModalType(null);
-            setSelectedUser(null);
-          }}
-          onApprove={handleApproveKTM}
-          onOpenSuspend={() => setModalType('SUSPEND')}
-        />
-      )}
-
-      {modalType === 'SUSPEND' && selectedUser && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
-            <div className="text-center space-y-2">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto ${
-                selectedUser.status === 'SUSPENDED' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
-              }`}>
-                <ShieldAlert className="w-7 h-7" />
+                <div className="relative">
+                  <select
+                    value={roleFilter}
+                    onChange={(e) => setRoleFilter(e.target.value)}
+                    className="w-full sm:w-auto appearance-none pl-4 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-[#2563EB] shadow-2xs cursor-pointer"
+                  >
+                    <option value="ALL">Mahasiswa/Klien</option>
+                    <option value="Penyedia Jasa">Penyedia Jasa</option>
+                    <option value="Klien">Klien</option>
+                    <option value="Klien Umum">Klien Umum</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-500 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
-              <h3 className="text-base font-extrabold text-slate-900">
-                {selectedUser.status === 'SUSPENDED' ? 'Aktifkan Kembali Akun?' : 'Tangguhkan Akun User?'}
-              </h3>
-              <p className="text-xs text-slate-500">
-                {selectedUser.status === 'SUSPENDED'
-                  ? `Akun ${selectedUser.name} akan diaktifkan kembali dan dapat bertransaksi.`
-                  : `User ${selectedUser.name} tidak akan dapat login atau menawarkan jasa sampai penangguhan dicabut.`}
-              </p>
             </div>
 
-            <div className="flex gap-3 pt-2">
-              <button
-                onClick={() => setModalType(null)}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl cursor-pointer"
-              >
-                Batal
-              </button>
-              <button
-                onClick={handleConfirmSuspend}
-                className={`flex-1 py-2.5 text-white font-bold text-xs rounded-xl cursor-pointer transition-all ${
-                  selectedUser.status === 'SUSPENDED' 
-                    ? 'bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20' 
-                    : 'bg-red-600 hover:bg-red-700 shadow-md shadow-red-500/20'
-                }`}
-              >
-                {selectedUser.status === 'SUSPENDED' ? 'Ya, Aktifkan' : 'Ya, Tolak / Suspend'}
-              </button>
+            {/* 3 KARTU STATISTIK REAL-TIME */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-xs">
+                <span className="text-xs font-semibold text-slate-500 block mb-2">Total Pengguna</span>
+                <div className="text-2xl sm:text-3xl font-black text-slate-900">{totalUsersCount} User</div>
+              </div>
+
+              <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-xs">
+                <span className="text-xs font-semibold text-slate-500 block mb-2">Mahasiswa Terverifikasi</span>
+                <div className="text-2xl sm:text-3xl font-black text-slate-900">{totalVerifiedDisplay} Orang</div>
+              </div>
+
+              <div className="bg-[#FEF3C7]/80 border border-amber-200/90 p-6 rounded-2xl shadow-xs relative">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-amber-900">Menunggu Verifikasi KTM</span>
+                  <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-amber-950">{totalPendingDisplay} Orang</div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+
+            {/* TABEL PENGGUNA */}
+            <UserTable
+              users={filteredUsers}
+              onSelectUser={(user) => setSelectedUser(user)}
+            />
+          </>
+        )}
+      </div>
     </AdminLayout>
   );
 };

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   FileCheck2, 
@@ -19,6 +19,45 @@ const Sidebar = ({
   onNavigateUserManagement = () => {},
   onNavigateSettings = () => {}
 }) => {
+  const [adminProfile, setAdminProfile] = useState({
+    nama: 'Super Admin',
+    email: 'admin@jasa.id',
+    avatar_url: null
+  });
+
+  useEffect(() => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) return;
+
+    fetch('http://localhost:3000/api/admin/settings', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then((res) => res.json())
+      .then((res) => {
+        if (res.success && res.data?.admin) {
+          setAdminProfile({
+            nama: res.data.admin.nama || 'Super Admin',
+            email: res.data.admin.email || 'admin@jasa.id',
+            avatar_url: res.data.admin.avatar_url || null
+          });
+        }
+      })
+      .catch((err) => console.error('Gagal memuat profil admin di sidebar:', err));
+  }, [activeMenu]);
+
+  const adminInitials = (adminProfile.nama || 'AD')
+    .split(' ')
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase();
+
+  const avatarSrc = adminProfile.avatar_url
+    ? adminProfile.avatar_url.startsWith('http')
+      ? adminProfile.avatar_url
+      : `http://localhost:3000${adminProfile.avatar_url}`
+    : null;
+
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, onClick: onNavigateDashboard },
     { id: 'verifikasi', label: 'Verifikasi Transaksi', icon: FileCheck2, onClick: onNavigateTransactionVerification },
@@ -55,7 +94,6 @@ const Sidebar = ({
         <div className="space-y-6">
           {/* HEADER LOGO & TOGGLE */}
           <div className="flex items-center justify-between pb-2 h-10">
-            {/* LOGO BIRU: DIKLIK UNTUK BUKA SIDEBAR KETIKA KONDISI TERSEDIA / TERSEMBUNYI */}
             <div 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
               className="flex items-center gap-3 cursor-pointer group"
@@ -75,7 +113,6 @@ const Sidebar = ({
               )}
             </div>
 
-            {/* TOMBOL TOGGLE (HANYA MUNCUL SAAT SIDEBAR SEDANG TERBUKA) */}
             {isSidebarOpen && (
               <button
                 onClick={() => setIsSidebarOpen(false)}
@@ -129,7 +166,7 @@ const Sidebar = ({
           </nav>
         </div>
 
-        {/* PROFIL ADMIN */}
+        {/* PROFIL ADMIN SINKRON */}
         <div className="pt-4 border-t border-slate-100">
           <button
             onClick={() => {
@@ -143,13 +180,22 @@ const Sidebar = ({
             } ${!isSidebarOpen ? 'md:justify-center md:px-0 md:border-transparent md:bg-transparent' : ''}`}
             title="Pengaturan Profil"
           >
-            <div className="w-9 h-9 bg-[#0F172A] rounded-full flex items-center justify-center text-white font-extrabold text-xs shrink-0 shadow-xs">
-              AD
-            </div>
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt={adminProfile.nama}
+                className="w-9 h-9 rounded-full object-cover shrink-0 shadow-xs border border-slate-200"
+              />
+            ) : (
+              <div className="w-9 h-9 bg-[#0F172A] rounded-full flex items-center justify-center text-white font-extrabold text-xs shrink-0 shadow-xs">
+                {adminInitials}
+              </div>
+            )}
+
             {isSidebarOpen && (
               <div className="overflow-hidden whitespace-nowrap text-left flex-1 transition-opacity duration-300">
-                <h4 className="font-extrabold text-xs text-slate-900 truncate">Super Admin</h4>
-                <span className="text-[10px] text-slate-400 truncate block">admin@jasa.id</span>
+                <h4 className="font-extrabold text-xs text-slate-900 truncate">{adminProfile.nama}</h4>
+                <span className="text-[10px] text-slate-400 truncate block">{adminProfile.email}</span>
               </div>
             )}
           </button>
