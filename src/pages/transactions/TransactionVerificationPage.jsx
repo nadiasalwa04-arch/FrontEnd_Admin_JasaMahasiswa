@@ -56,7 +56,7 @@ const TransactionVerificationPage = ({
           const rawNominal = Number(t.total_harga || t.harga || t.service_price || t.total_price || t.amount || 0);
           const rawStatus = (t.status || '').toLowerCase();
           
-          let mappedStatus = 'Pending';
+          let mappedStatus = 'Pending'; 
           if (rawStatus === 'selesai' || rawStatus === 'completed' || rawStatus === 'approved') {
             mappedStatus = 'Selesai';
           } else if (rawStatus === 'ditolak' || rawStatus === 'rejected' || rawStatus === 'cancelled') {
