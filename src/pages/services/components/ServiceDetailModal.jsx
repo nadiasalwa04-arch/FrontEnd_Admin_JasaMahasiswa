@@ -5,13 +5,53 @@ const ServiceDetailModal = ({ selectedService, closeModal, onApprove, onReject }
   if (!selectedService) return null;
 
   // Menampung kemungkinan nama properti gambar sampul & media dari backend/state
-  const coverImage = selectedService.coverImage || selectedService.cover_url || selectedService.thumbnail || selectedService.images?.[0];
-  const mediaImage = selectedService.mediaImage || selectedService.media_url || selectedService.images?.[1];
+  const rawCover =
+    selectedService.bannerUrl ||
+    selectedService.coverImage ||
+    selectedService.banner_url ||
+    selectedService.cover_url ||
+    selectedService.thumbnail ||
+    selectedService.images?.[0];
+
+  const coverImage = rawCover
+    ? rawCover.startsWith('http')
+      ? rawCover
+      : `http://localhost:3000${rawCover}`
+    : null;
+
+  const rawMedia =
+    selectedService.mediaImage ||
+    selectedService.media_url ||
+    selectedService.images?.[1];
+
+  const mediaImage = rawMedia
+    ? rawMedia.startsWith('http')
+      ? rawMedia
+      : `http://localhost:3000${rawMedia}`
+    : null;
 
   // Menangani format harga (baik sudah berbentuk "Rp 100.000" maupun angka)
   const formattedPrice = typeof selectedService.price === 'number'
     ? selectedService.price.toLocaleString('id-ID')
     : String(selectedService.price || '0').replace(/^Rp\s*/i, '');
+
+  // Format Waktu Pengerjaan & Revisi dari kolom database (waktu_pengerjaan & jumlah_revisi)
+  const rawEstimate = selectedService.estimate || selectedService.waktu_pengerjaan;
+  const formattedEstimate = rawEstimate
+    ? typeof rawEstimate === 'number'
+      ? `${rawEstimate} Hari`
+      : rawEstimate
+    : '-';
+
+  const rawRevision =
+    selectedService.revisions ||
+    selectedService.revision ||
+    selectedService.jumlah_revisi;
+  const formattedRevision = rawRevision !== undefined && rawRevision !== null && rawRevision !== ''
+    ? typeof rawRevision === 'number'
+      ? `${rawRevision} Kali`
+      : rawRevision
+    : '-';
 
   // Memecah deskripsi/keunggulan jika dipisahkan baris baru atau bullet
   const descriptionLines = selectedService.description
@@ -114,13 +154,13 @@ const ServiceDetailModal = ({ selectedService, closeModal, onApprove, onReject }
               <p>
                 Waktu Pengerjaan:{' '}
                 <span className="font-semibold text-slate-900">
-                  {selectedService.estimate || '-'}
+                  {formattedEstimate}
                 </span>
               </p>
               <p>
                 Revisi:{' '}
                 <span className="font-semibold text-slate-900">
-                  {selectedService.revisions || selectedService.revision || '-'}
+                  {formattedRevision}
                 </span>
               </p>
             </div>

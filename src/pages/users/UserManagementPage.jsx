@@ -38,138 +38,84 @@ const UserManagementPage = ({
     { id: 1, title: 'Verifikasi KTM Baru', desc: 'Budi Setiawan mengunggah KTM untuk verifikasi.', time: '15 mnt lalu', unread: true },
   ]);
 
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      initials: 'AP',
-      name: 'Andi Pratama',
-      email: 'andi@ui.ac.id',
-      institution: 'Informatika UI',
-      campusHeader: 'UNIVERSITAS INDONESIA',
-      nim: '22060129301',
-      faculty: 'Fakultas Ilmu Komputer',
-      major: 'S1 Informatika',
-      phone: '+62 812-3456-7890',
-      role: 'Penyedia Jasa',
-      status: 'Ditolak',
-      uploadedAt: '06 Oktober 2026, 09:15 WIB',
-      note: ''
-    },
-    {
-      id: 2,
-      initials: 'BS',
-      name: 'Budi Setiawan',
-      email: 'budi@ub.ac.id',
-      institution: 'Desain Grafis UB',
-      campusHeader: 'UNIVERSITAS BRAWIJAYA',
-      nim: '215150400111023',
-      faculty: 'Fakultas Ilmu Komputer',
-      major: 'Desain Grafis',
-      phone: '+62 813-9876-5432',
-      role: 'Klien',
-      status: 'Pending',
-      uploadedAt: '08 Oktober 2026, 14:20 WIB',
-      note: ''
-    },
-    {
-      id: 3,
-      initials: 'R',
-      name: 'Rina Wijaya',
-      email: 'rina@gmail.com',
-      institution: 'Umum / Non-Mahasiswa',
-      campusHeader: '-',
-      nim: '-',
-      faculty: '-',
-      major: '-',
-      phone: '+62 857-1122-3344',
-      role: 'Klien Umum',
-      status: 'Aktif',
-      uploadedAt: '-',
-      note: ''
-    },
-    {
-      id: 4,
-      initials: 'JG',
-      name: 'Jillsya Ginta',
-      email: 'jillsyaginta@ub.ac.id',
-      institution: 'Teknologi Informasi UB',
-      campusHeader: 'UNIVERSITAS BRAWIJAYA',
-      nim: '225150707111045',
-      faculty: 'Fakultas Ilmu Komputer',
-      major: 'Teknologi Informasi',
-      phone: '+62 821-4455-6677',
-      role: 'Penyedia Jasa',
-      status: 'Terverifikasi',
-      uploadedAt: '05 Oktober 2026, 11:05 WIB',
-      note: ''
-    },
-    {
-      id: 5,
-      initials: 'MR',
-      name: 'Maya Rahmawati',
-      email: 'maya.r@student.ub.ac.id',
-      institution: 'Statistika UB',
-      campusHeader: 'UNIVERSITAS BRAWIJAYA',
-      nim: '225090500111012',
-      faculty: 'Fakultas MIPA',
-      major: 'S1 Statistika',
-      phone: '+62 812-9988-7766',
-      role: 'Penyedia Jasa',
-      status: 'Pending',
-      uploadedAt: '09 Oktober 2026, 10:30 WIB',
-      note: ''
-    },
-    {
-      id: 6,
-      initials: 'DF',
-      name: 'Dimas Febrian',
-      email: 'dimas.f@student.itb.ac.id',
-      institution: 'Teknik Elektro ITB',
-      campusHeader: 'INSTITUT TEKNOLOGI BANDUNG',
-      nim: '13221045',
-      faculty: 'STEI',
-      major: 'Teknik Elektro',
-      phone: '+62 856-3322-1100',
-      role: 'Penyedia Jasa',
-      status: 'Terverifikasi',
-      uploadedAt: '04 Oktober 2026, 16:45 WIB',
-      note: ''
-    },
-    {
-      id: 7,
-      initials: 'SN',
-      name: 'Siti Nurhaliza',
-      email: 'siti.nur@yahoo.com',
-      institution: 'Umum / Non-Mahasiswa',
-      campusHeader: '-',
-      nim: '-',
-      faculty: '-',
-      major: '-',
-      phone: '+62 878-5544-3322',
-      role: 'Klien Umum',
-      status: 'Aktif',
-      uploadedAt: '-',
-      note: ''
-    },
-    {
-      id: 8,
-      initials: 'FA',
-      name: 'Fajar Nugroho',
-      email: 'fajar.n@student.ugm.ac.id',
-      institution: 'Ilmu Komputer UGM',
-      campusHeader: 'UNIVERSITAS GADJAH MADA',
-      nim: '21/478910/PA/20789',
-      faculty: 'FMIPA',
-      major: 'Ilmu Komputer',
-      phone: '+62 819-7766-5544',
-      role: 'Klien',
-      status: 'Ditolak',
-      uploadedAt: '07 Oktober 2026, 08:50 WIB',
-      note: 'Foto KTM terpotong pada bagian NIM.'
+  // STATE DATA PENGGUNA DARI DATABASE
+  const [users, setUsers] = useState([]);
+
+  const mapKtmStatusToUi = (ktmStatus, role) => {
+    if (role === 'umum' || role === 'klien_umum') return 'Aktif';
+    const st = (ktmStatus || '').toLowerCase();
+    if (st === 'disetujui' || st === 'terverifikasi') return 'Terverifikasi';
+    if (st === 'ditolak') return 'Ditolak';
+    if (st === 'unggah_ulang' || st === 'unggah ulang') return 'Unggah Ulang';
+    return 'Pending';
+  };
+
+  const mapRoleToUi = (role) => {
+    const r = (role || '').toLowerCase();
+    if (r === 'penyedia_jasa' || r === 'seller') return 'Penyedia Jasa';
+    if (r === 'umum' || r === 'klien_umum') return 'Klien Umum';
+    if (r === 'klien' || r === 'buyer') return 'Klien';
+    return 'Penyedia Jasa';
+  };
+
+  const fetchUsers = async () => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) return;
+
+    try {
+      const response = await fetch('http://localhost:3000/api/admin/users', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const result = await response.json();
+
+      if (result.success && Array.isArray(result.data)) {
+        const mappedUsers = result.data
+          .filter((u) => (u.role || '').toLowerCase() !== 'admin')
+          .map((u) => {
+            const uiRole = mapRoleToUi(u.role);
+            const uiStatus = mapKtmStatusToUi(u.ktm_status, u.role);
+            const nama = u.nama || 'Mahasiswa';
+            const initials = nama
+              .split(' ')
+              .slice(0, 2)
+              .map((n) => n[0])
+              .join('')
+              .toUpperCase();
+
+            return {
+              id: u.id,
+              initials: initials || 'US',
+              name: nama,
+              email: u.email || '-',
+              institution: u.jurusan || u.universitas || u.institution || 'Universitas Brawijaya',
+              campusHeader: (u.universitas || 'UNIVERSITAS BRAWIJAYA').toUpperCase(),
+              nim: u.nim || '-',
+              faculty: u.fakultas || 'Fakultas Vokasi',
+              major: u.jurusan || 'Teknologi Informasi',
+              phone: u.no_hp || u.phone || '-',
+              role: uiRole,
+              status: uiStatus,
+              ktmUrl: u.ktm_url ? `http://localhost:3000${u.ktm_url}` : null,
+              uploadedAt: u.created_at
+                ? new Date(u.created_at).toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                  })
+                : '-',
+              note: u.ktm_note || ''
+            };
+          });
+        setUsers(mappedUsers);
+      }
+    } catch (error) {
+      console.error('Gagal mengambil data pengguna:', error);
     }
-  ]);
+  };
 
   useEffect(() => {
+    fetchUsers();
+
     const handleClickOutside = (e) => {
       if (notificationRef.current && !notificationRef.current.contains(e.target)) {
         setShowNotifications(false);
@@ -191,6 +137,13 @@ const UserManagementPage = ({
     setSelectedUser(updatedUser);
   };
 
+  // STATISTIK REAL-TIME DARI DATABASE
+  const totalUsersCount = users.length;
+  const totalVerifiedDisplay = users.filter((u) => u.status === 'Terverifikasi').length;
+  const totalPendingDisplay = users.filter(
+    (u) => u.status === 'Pending' || u.status === 'Unggah Ulang'
+  ).length;
+
   const baseFilteredUsers = users.filter((user) => {
     const matchesRole = roleFilter === 'ALL' || user.role === roleFilter;
     const query = searchQuery.toLowerCase();
@@ -202,7 +155,9 @@ const UserManagementPage = ({
   });
 
   const countAll = baseFilteredUsers.length;
-  const countPending = baseFilteredUsers.filter((u) => u.status === 'Pending' || u.status === 'Unggah Ulang').length;
+  const countPending = baseFilteredUsers.filter(
+    (u) => u.status === 'Pending' || u.status === 'Unggah Ulang'
+  ).length;
   const countVerified = baseFilteredUsers.filter((u) => u.status === 'Terverifikasi').length;
   const countActive = baseFilteredUsers.filter((u) => u.status === 'Aktif').length;
   const countRejected = baseFilteredUsers.filter((u) => u.status === 'Ditolak').length;
@@ -219,11 +174,6 @@ const UserManagementPage = ({
     (safeCurrentPage - 1) * itemsPerPage,
     safeCurrentPage * itemsPerPage
   );
-
-  const verifiedDiff = users.filter((u) => u.status === 'Terverifikasi').length - 2;
-  const pendingDiff = users.filter((u) => u.status === 'Pending').length - 2;
-  const totalVerifiedDisplay = 85 + verifiedDiff;
-  const totalPendingDisplay = 12 + pendingDiff;
 
   const selectedRoleLabel =
     ROLE_OPTIONS.find((opt) => opt.value === roleFilter)?.label || 'Semua Peran';
@@ -333,16 +283,16 @@ const UserManagementPage = ({
               </div>
             </div>
 
-            {/* 3 KARTU STATISTIK */}
+            {/* 3 KARTU STATISTIK REAL-TIME */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-xs">
                 <span className="text-xs font-semibold text-slate-500 block mb-2">Total Pengguna</span>
-                <div className="text-2xl sm:text-3xl font-black text-slate-900">120 User</div>
+                <div className="text-2xl sm:text-3xl font-black text-slate-900">{totalUsersCount} User</div>
               </div>
 
               <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-xs">
                 <span className="text-xs font-semibold text-slate-500 block mb-2">Mahasiswa Terverifikasi</span>
-                <div className="text-2xl sm:text-3xl font-black text-slate-900">{totalVerifiedDisplay} User</div>
+                <div className="text-2xl sm:text-3xl font-black text-slate-900">{totalVerifiedDisplay} Orang</div>
               </div>
 
               <div className="bg-[#FEF3C7]/80 border border-amber-200/90 p-6 rounded-2xl shadow-xs relative">
@@ -350,7 +300,7 @@ const UserManagementPage = ({
                   <span className="text-xs font-bold text-amber-900">Menunggu Verifikasi KTM</span>
                   <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-black text-amber-950">{totalPendingDisplay} User</div>
+                <div className="text-2xl sm:text-3xl font-black text-amber-950">{totalPendingDisplay} Orang</div>
               </div>
             </div>
 

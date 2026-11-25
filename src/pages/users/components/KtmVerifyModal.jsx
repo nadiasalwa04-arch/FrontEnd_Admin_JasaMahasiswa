@@ -6,8 +6,8 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
     name: selectedUser?.name || '',
     email: selectedUser?.email || '',
     institution: selectedUser?.institution || '',
-    phone: selectedUser?.phone || '+62 812-3456-7890',
-    role: selectedUser?.role || 'Klien Umum',
+    phone: selectedUser?.phone || '-',
+    role: selectedUser?.role || 'Penyedia Jasa',
     status: selectedUser?.status || 'Pending',
   });
 
@@ -15,6 +15,39 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
   const [saveToast, setSaveToast] = useState('');
 
   if (!selectedUser) return null;
+
+  const mapUiStatusToDb = (uiStatus) => {
+    switch (uiStatus) {
+      case 'Terverifikasi':
+        return 'disetujui';
+      case 'Ditolak':
+        return 'ditolak';
+      case 'Unggah Ulang':
+        return 'unggah_ulang';
+      default:
+        return 'menunggu_verifikasi';
+    }
+  };
+
+  const syncUserStatusToBackend = async (newUiStatus, noteText) => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) return;
+    try {
+      await fetch(`http://localhost:3000/api/admin/users/${selectedUser.id}/verify-ktm`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ktm_status: mapUiStatusToDb(newUiStatus),
+          note: noteText,
+        }),
+      });
+    } catch (error) {
+      console.error('Gagal menyimpan status verifikasi KTM ke server:', error);
+    }
+  };
 
   const handleChange = (field, value) => {
     const updated = { ...formData, [field]: value };
@@ -26,7 +59,8 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
     });
   };
 
-  const handleRejectDocument = () => {
+  const handleRejectDocument = async () => {
+    await syncUserStatusToBackend('Ditolak', verificationNote);
     const updatedData = {
       ...selectedUser,
       ...formData,
@@ -37,7 +71,8 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
     onUpdateUser(updatedData);
   };
 
-  const handleApproveDocument = () => {
+  const handleApproveDocument = async () => {
+    await syncUserStatusToBackend('Terverifikasi', verificationNote);
     const updatedData = {
       ...selectedUser,
       ...formData,
@@ -48,21 +83,25 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
     onUpdateUser(updatedData);
   };
 
-  const handleRequestReupload = () => {
+  const handleRequestReupload = async () => {
+    const defaultNote =
+      verificationNote || 'Silakan unggah ulang foto KTM yang jelas dan tidak buram.';
+    await syncUserStatusToBackend('Unggah Ulang', defaultNote);
     const updatedData = {
       ...selectedUser,
       ...formData,
       status: 'Unggah Ulang',
-      note: verificationNote || 'Silakan unggah ulang foto KTM yang jelas dan tidak buram.',
+      note: defaultNote,
     };
     setFormData((prev) => ({ ...prev, status: 'Unggah Ulang' }));
     if (!verificationNote) {
-      setVerificationNote('Silakan unggah ulang foto KTM yang jelas dan tidak buram.');
+      setVerificationNote(defaultNote);
     }
     onUpdateUser(updatedData);
   };
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
+    await syncUserStatusToBackend(formData.status, verificationNote);
     onUpdateUser({
       ...selectedUser,
       ...formData,
@@ -95,11 +134,10 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
 
       {/* CARD UTAMA EDIT & DETAIL PENGGUNA */}
       <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-6 sm:p-8 space-y-8">
-        
         {/* HEADER SECTION */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
           <div>
-            <h2 className="text-base sm:text-lg font-extrabold text-slate-900">Edit & Detail Pengguna</h2>
+            <h2 className="text-base sm:text-lg font-extrabold text-slate-900">Edit &amp; Detail Pengguna</h2>
             <p className="text-xs text-slate-400 mt-0.5">Perbarui informasi profil, peran, dan status akun pengguna</p>
           </div>
 
@@ -129,7 +167,6 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
 
           {/* KOLOM KANAN: GRID INPUT FORM */}
           <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
-            {/* Nama Lengkap */}
             <div className="space-y-1.5">
               <label className="font-extrabold text-slate-700 block">Nama Lengkap</label>
               <input
@@ -140,7 +177,6 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
               />
             </div>
 
-            {/* Alamat Email */}
             <div className="space-y-1.5">
               <label className="font-extrabold text-slate-700 block">Alamat Email</label>
               <input
@@ -151,7 +187,6 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
               />
             </div>
 
-            {/* Program Studi / Universitas */}
             <div className="space-y-1.5">
               <label className="font-extrabold text-slate-700 block">Program Studi / Universitas</label>
               <input
@@ -162,7 +197,6 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
               />
             </div>
 
-            {/* Nomor WhatsApp / Telepon */}
             <div className="space-y-1.5">
               <label className="font-extrabold text-slate-700 block">Nomor WhatsApp / Telepon</label>
               <input
@@ -173,7 +207,6 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
               />
             </div>
 
-            {/* Peran (Role) */}
             <div className="space-y-1.5">
               <label className="font-extrabold text-slate-700 block">Peran (Role)</label>
               <select
@@ -187,7 +220,6 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
               </select>
             </div>
 
-            {/* Status Akun */}
             <div className="space-y-1.5">
               <label className="font-extrabold text-slate-700 block">Status Akun</label>
               <select
@@ -217,38 +249,42 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
               {/* PREVIEW KARTU KTM (KIRI) */}
               <div className="lg:col-span-7 space-y-2">
                 <span className="text-xs font-extrabold text-slate-700 block">Lampiran Kartu Tanda Mahasiswa (KTM)</span>
-                
-                {/* MOCKUP KARTU KTM VISUAL */}
+
                 <div className="bg-[#111827] p-6 sm:p-8 rounded-2xl flex items-center justify-center">
-                  <div className="w-full max-w-md bg-[#1D4ED8] rounded-2xl overflow-hidden shadow-lg border border-blue-400/30">
-                    {/* Header Kampus */}
-                    <div className="bg-[#1E3A8A] px-5 py-3 text-white font-extrabold text-xs tracking-wider uppercase">
-                      {selectedUser.campusHeader || 'UNIVERSITAS INDONESIA'}
-                    </div>
-                    {/* Body Kartu */}
-                    <div className="bg-white m-2.5 mt-0 rounded-b-xl p-4 flex items-center gap-4">
-                      <div className="w-20 h-24 bg-slate-200 rounded-lg flex flex-col items-center justify-end overflow-hidden shrink-0 border border-slate-300/60">
-                        <div className="w-9 h-9 bg-slate-400 rounded-full mb-1" />
-                        <div className="w-14 h-8 bg-slate-400 rounded-t-full" />
+                  {selectedUser.ktmUrl ? (
+                    <img
+                      src={selectedUser.ktmUrl}
+                      alt={`KTM ${formData.name}`}
+                      className="max-h-64 rounded-xl object-contain shadow-lg"
+                    />
+                  ) : (
+                    <div className="w-full max-w-md bg-[#1D4ED8] rounded-2xl overflow-hidden shadow-lg border border-blue-400/30">
+                      <div className="bg-[#1E3A8A] px-5 py-3 text-white font-extrabold text-xs tracking-wider uppercase">
+                        {selectedUser.campusHeader || 'UNIVERSITAS BRAWIJAYA'}
                       </div>
-                      <div className="space-y-1 text-left">
-                        <h4 className="font-black text-slate-900 text-xs sm:text-sm uppercase">{formData.name}</h4>
-                        <p className="text-[11px] font-semibold text-slate-500">NIM: {selectedUser.nim || '22060129301'}</p>
-                        <p className="text-[11px] text-slate-400">{selectedUser.faculty || 'Fakultas Ilmu Komputer'}</p>
-                        <p className="text-[11px] text-slate-400">{selectedUser.major || 'S1 Informatika'}</p>
+                      <div className="bg-white m-2.5 mt-0 rounded-b-xl p-4 flex items-center gap-4">
+                        <div className="w-20 h-24 bg-slate-200 rounded-lg flex flex-col items-center justify-end overflow-hidden shrink-0 border border-slate-300/60">
+                          <div className="w-9 h-9 bg-slate-400 rounded-full mb-1" />
+                          <div className="w-14 h-8 bg-slate-400 rounded-t-full" />
+                        </div>
+                        <div className="space-y-1 text-left">
+                          <h4 className="font-black text-slate-900 text-xs sm:text-sm uppercase">{formData.name}</h4>
+                          <p className="text-[11px] font-semibold text-slate-500">NIM: {selectedUser.nim || '-'}</p>
+                          <p className="text-[11px] text-slate-400">{selectedUser.faculty || 'Fakultas Vokasi'}</p>
+                          <p className="text-[11px] text-slate-400">{selectedUser.major || 'Teknologi Informasi'}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 <p className="text-[11px] text-slate-400 pt-1">
-                  Tanggal Unggah Dokumen <span className="font-extrabold text-slate-700 ml-1">{selectedUser.uploadedAt || '06 Oktober 2026, 09:15 WIB'}</span>
+                  Tanggal Unggah Dokumen <span className="font-extrabold text-slate-700 ml-1">{selectedUser.uploadedAt || '-'}</span>
                 </p>
               </div>
 
               {/* STATUS & TOMBOL / KONFIRMASI DI AREA KTM (KANAN) */}
               <div className="lg:col-span-5 space-y-4 lg:pt-6">
-                {/* Banner Status */}
                 <div className={`p-3.5 rounded-xl text-center font-extrabold text-xs border transition-colors ${
                   formData.status === 'Terverifikasi'
                     ? 'bg-[#DCFCE7] border-emerald-200 text-[#16A34A]'
@@ -269,7 +305,6 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
                   }
                 </div>
 
-                {/* Textarea Catatan */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-extrabold text-slate-700 block">
                     Catatan Verifikasi / Instruksi Unggah Ulang
@@ -284,7 +319,6 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
                   />
                 </div>
 
-                {/* KONDISIONAL AKSI BERDASARKAN STATUS */}
                 {formData.status === 'Pending' && (
                   <div className="space-y-2.5 pt-1">
                     <div className="flex gap-2.5">
@@ -332,7 +366,6 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
                       <span>Dokumen KTM ditolak!</span>
                     </div>
 
-                    {/* OPSI BERI KESEMPATAN UNGGAH ULANG */}
                     <button
                       type="button"
                       onClick={handleRequestReupload}
@@ -356,7 +389,6 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
                       </p>
                     </div>
 
-                    {/* Tombol jika user sudah unggah ulang dan admin ingin verifikasi lagi */}
                     <button
                       type="button"
                       onClick={() => handleChange('status', 'Pending')}
@@ -370,7 +402,6 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

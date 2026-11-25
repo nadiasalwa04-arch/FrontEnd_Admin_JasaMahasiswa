@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
 
-const RecentActivity = ({ recentUsers, onNavigateUserManagement }) => {
+const RecentActivity = ({ recentUsers = [], totalUsers = 0, onNavigateUserManagement }) => {
   return (
     <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-6 space-y-5">
       <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
@@ -39,7 +39,7 @@ const RecentActivity = ({ recentUsers, onNavigateUserManagement }) => {
           onClick={onNavigateUserManagement}
           className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#2563EB] hover:text-blue-700 cursor-pointer transition-colors"
         >
-          <span>Kelola Semua Pengguna (142)</span>
+          <span>Kelola Semua Pengguna ({totalUsers})</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>

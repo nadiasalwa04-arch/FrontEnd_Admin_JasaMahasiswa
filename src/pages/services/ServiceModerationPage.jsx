@@ -9,6 +9,7 @@ const ServiceModerationPage = ({
   isSidebarOpen,
   setIsSidebarOpen,
   pendingServiceCount = 0,
+  setPendingServiceCount = () => {},
   onNavigateDashboard = () => {},
   onNavigateTransactionVerification = () => {},
   onNavigateServiceModeration = () => {},
@@ -32,24 +33,35 @@ const ServiceModerationPage = ({
     if (!token) return;
 
     try {
-      const response = await fetch('http://localhost:3000/api/admin/services/pending', {
+      const response = await fetch('http://localhost:3000/api/admin/services', {
         headers: { Authorization: `Bearer ${token}` }
       });
       const result = await response.json();
 
       if (result.success) {
-        const mappedServices = result.data.map((s) => ({
-          id: s.id,
-          title: s.judul_jasa,
-          author: `Oleh: ${s.penulis || 'Mahasiswa'}`,
-          category: s.kategori || 'Umum',
-          price: s.harga ? `Rp ${Number(s.harga).toLocaleString('id-ID')}` : 'Rp 0',
-          estimate: s.estimasi_pengerjaan || '-',
-          description: s.deskripsi || 'Tidak ada deskripsi tambahan.',
-          status: s.status ? s.status.toUpperCase() : 'PENDING',
-          colorBg: 'bg-blue-500'
-        }));
+        const mappedServices = result.data.map((s) => {
+          const rawStatus = (s.status || '').toLowerCase();
+          let mappedStatus = 'PENDING';
+          if (rawStatus === 'aktif' || rawStatus === 'approved') mappedStatus = 'APPROVED';
+          else if (rawStatus === 'ditolak' || rawStatus === 'rejected') mappedStatus = 'REJECTED';
+
+          return {
+            id: s.id,
+            title: s.judul || s.title || 'Layanan Jasa',
+            author: `Oleh: ${s.seller_name || 'Mahasiswa'}`,
+            price: s.harga ? `Rp ${Number(s.harga).toLocaleString('id-ID')}` : 'Rp 0',
+            packageName: s.nama_paket || 'Paket Standar',
+            category: s.nama_paket || 'Paket Standar',
+            estimate: s.waktu_pengerjaan ? `${s.waktu_pengerjaan} Hari` : '-',
+            revisions: s.jumlah_revisi !== undefined ? `${s.jumlah_revisi} Kali` : '-',
+            bannerUrl: s.banner_url ? `http://localhost:3000${s.banner_url}` : null,
+            description: s.deskripsi || 'Tidak ada deskripsi.',
+            status: mappedStatus,
+            colorBg: 'bg-blue-500'
+          };
+        });
         setServices(mappedServices);
+        setPendingServiceCount(mappedServices.filter((s) => s.status === 'PENDING').length);
       }
     } catch (error) {
       console.error('Gagal mengambil data moderasi jasa:', error);
@@ -73,24 +85,46 @@ const ServiceModerationPage = ({
     setModalStep('REVIEW');
   };
 
-  const handleApproveService = () => {
+  const handleApproveService = async () => {
     if (!selectedService) return;
-    setServices((prev) =>
-      prev.map((s) => (s.id === selectedService.id ? { ...s, status: 'APPROVED' } : s))
-    );
+    const token = localStorage.getItem('adminToken');
+    try {
+      await fetch(`http://localhost:3000/api/admin/services/${selectedService.id}/moderate`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status: 'aktif' })
+      });
+      setServices((prev) =>
+        prev.map((s) => (s.id === selectedService.id ? { ...s, status: 'APPROVED' } : s))
+      );
+      setPendingServiceCount((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error(err);
+    }
     setModalStep(null);
     setSelectedService(null);
   };
 
-  const handleRejectService = (reason, note) => {
+  const handleRejectService = async (reason, note) => {
     if (!selectedService) return;
-    setServices((prev) =>
-      prev.map((s) =>
-        s.id === selectedService.id
-          ? { ...s, status: 'REJECTED', rejectReason: reason, rejectNote: note }
-          : s
-      )
-    );
+    const token = localStorage.getItem('adminToken');
+    try {
+      await fetch(`http://localhost:3000/api/admin/services/${selectedService.id}/moderate`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status: 'ditolak' })
+      });
+      setServices((prev) =>
+        prev.map((s) =>
+          s.id === selectedService.id
+            ? { ...s, status: 'REJECTED', rejectReason: reason, rejectNote: note }
+            : s
+        )
+      );
+      setPendingServiceCount((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error(err);
+    }
     setModalStep(null);
     setSelectedService(null);
   };
@@ -110,7 +144,7 @@ const ServiceModerationPage = ({
       isSidebarOpen={isSidebarOpen}
       setIsSidebarOpen={setIsSidebarOpen}
       activeMenu="moderasi"
-      pendingServiceCount={pendingServiceCount}
+      pendingServiceCount={pendingCount}
       title="Moderasi Jasa Mahasiswa"
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}

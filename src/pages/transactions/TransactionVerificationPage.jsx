@@ -27,43 +27,67 @@ const TransactionVerificationPage = ({
     { id: 1, title: 'Pembayaran Masuk', desc: 'Siti A. melakukan pembayaran #TRX-8821', time: '5 mnt lalu', unread: true },
   ]);
 
-  const [transactions, setTransactions] = useState([
-    {
-      id: '#TRX-8821',
-      fullId: 'TRX-8821-2026',
-      title: 'Jasa Web React & Tailwind (E-Wallet)',
-      serviceName: 'Jasa Web React & Tailwind',
-      buyer: 'Siti A.',
-      seller: 'Budi S.',
-      amount: 'Rp 77.000',
-      status: 'Pending',
-      bank: 'GoPay / QRIS'
-    },
-    {
-      id: '#TRX-8820',
-      fullId: 'TRX-8820-2026',
-      title: 'Pencairan Saldo Bank BCA (a.n Andi)',
-      serviceName: 'Pencairan Saldo Bank BCA',
-      buyer: 'Andi P.',
-      seller: 'Platform',
-      amount: 'Rp 150.000',
-      status: 'Ditolak',
-      bank: 'Transfer Bank BCA'
-    },
-    {
-      id: '#TRX-8819',
-      fullId: 'TRX-8819-2026',
-      title: 'Jasa Desain Poster (QRIS)',
-      serviceName: 'Jasa Desain Poster',
-      buyer: 'Budi S.',
-      seller: 'Arief S.',
-      amount: 'Rp 35.000',
-      status: 'Selesai',
-      bank: 'QRIS Auto'
+  // STATE TRANSAKSI & TOTAL USER DARI DATABASE
+  const [transactions, setTransactions] = useState([]);
+  const [totalUsers, setTotalUsers] = useState(0);
+
+  // FUNGSI FETCH TRANSAKSI & STATISTIK USER DARI BACKEND
+  const fetchTransactions = async () => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) return;
+
+    try {
+      const [trxRes, statsRes] = await Promise.all([
+        fetch('http://localhost:3000/api/admin/transactions', {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        fetch('http://localhost:3000/api/admin/stats', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ]);
+
+      const result = await trxRes.json();
+      const statsResult = await statsRes.json();
+
+      if (statsResult.success && statsResult.data) {
+        setTotalUsers(statsResult.data.totalUsers || 0);
+      }
+
+      if (result.success) {
+        const mappedTrx = result.data.map((t) => {
+          const rawNominal = Number(t.total_harga || t.harga || t.service_price || t.total_price || t.amount || 0);
+          const rawStatus = (t.status || '').toLowerCase();
+
+          let mappedStatus = 'Pending';
+          if (rawStatus === 'selesai' || rawStatus === 'completed' || rawStatus === 'approved') {
+            mappedStatus = 'Selesai';
+          } else if (rawStatus === 'ditolak' || rawStatus === 'rejected' || rawStatus === 'cancelled') {
+            mappedStatus = 'Ditolak';
+          }
+
+          return {
+            id: `#TRX-${t.id}`,
+            fullId: `TRX-${t.id}-2026`,
+            title: t.service_title || t.deskripsi_transaksi || 'Pesanan Jasa Mahasiswa',
+            serviceName: t.service_title || 'Layanan Jasa',
+            buyer: t.buyer_name || 'Mahasiswa',
+            seller: t.seller_name || 'Provider',
+            rawAmount: rawNominal,
+            amount: `Rp ${rawNominal.toLocaleString('id-ID')}`,
+            status: mappedStatus,
+            bank: t.payment_method || t.metode_pembayaran || 'QRIS'
+          };
+        });
+        setTransactions(mappedTrx);
+      }
+    } catch (error) {
+      console.error('Gagal mengambil data transaksi:', error);
     }
-  ]);
+  };
 
   useEffect(() => {
+    fetchTransactions();
+
     const handleClickOutside = (e) => {
       if (notificationRef.current && !notificationRef.current.contains(e.target)) {
         setShowNotifications(false);
@@ -85,29 +109,28 @@ const TransactionVerificationPage = ({
 
   const handleConfirmApprove = () => {
     if (!selectedTrx) return;
-    setTransactions(prev => prev.map(t => t.id === selectedTrx.id ? { ...t, status: 'Selesai' } : t));
+    setTransactions((prev) =>
+      prev.map((t) => (t.id === selectedTrx.id ? { ...t, status: 'Selesai' } : t))
+    );
     setActiveModal(null);
     setSelectedTrx(null);
   };
 
-  const filteredTrx = transactions.filter(t => {
-    const matchesTab = activeTab === 'ALL' || 
-                       (activeTab === 'PENDING' && t.status === 'Pending') ||
-                       (activeTab === 'APPROVED' && t.status === 'Selesai') ||
-                       (activeTab === 'REJECTED' && t.status === 'Ditolak');
-    const matchesSearch = t.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          t.buyer.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredTrx = transactions.filter((t) => {
+    const matchesTab =
+      activeTab === 'ALL' ||
+      (activeTab === 'PENDING' && t.status === 'Pending') ||
+      (activeTab === 'APPROVED' && t.status === 'Selesai') ||
+      (activeTab === 'REJECTED' && t.status === 'Ditolak');
+    const matchesSearch =
+      t.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.buyer.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesTab && matchesSearch;
   });
 
-  const pendingCount = transactions.filter(t => t.status === 'Pending').length;
-
-  const tabLabels = {
-    PENDING: 'Pending',
-    APPROVED: 'Terverifikasi',
-    REJECTED: 'Ditolak',
-  };
+  const pendingCount = transactions.filter((t) => t.status === 'Pending').length;
+  const totalOmset = transactions.reduce((sum, t) => sum + (t.rawAmount || 0), 0);
 
   return (
     <AdminLayout
@@ -116,14 +139,6 @@ const TransactionVerificationPage = ({
       activeMenu="verifikasi"
       pendingServiceCount={pendingServiceCount}
       title="Verifikasi Transaksi"
-      breadcrumbs={
-        activeTab !== 'ALL'
-          ? [
-              { label: 'Verifikasi Transaksi', onClick: () => setActiveTab('ALL') },
-              { label: tabLabels[activeTab] },
-            ]
-          : []
-      }
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
       showNotifications={showNotifications}
@@ -152,12 +167,14 @@ const TransactionVerificationPage = ({
 
           <div className="bg-white border border-slate-200/80 p-5 rounded-3xl shadow-xs">
             <span className="text-xs font-bold text-slate-400 block mb-1">Mahasiswa Terdaftar</span>
-            <div className="text-2xl md:text-3xl font-black text-slate-900">142 User</div>
+            <div className="text-2xl md:text-3xl font-black text-slate-900">{totalUsers} User</div>
           </div>
 
           <div className="bg-white border border-slate-200/80 p-5 rounded-3xl shadow-xs sm:col-span-2 lg:col-span-1">
             <span className="text-xs font-bold text-slate-400 block mb-1">Total Omset Platform</span>
-            <div className="text-2xl md:text-3xl font-black text-emerald-600">Rp 12.450.000</div>
+            <div className="text-2xl md:text-3xl font-black text-emerald-600">
+              Rp {totalOmset.toLocaleString('id-ID')}
+            </div>
           </div>
         </div>
 
@@ -168,7 +185,7 @@ const TransactionVerificationPage = ({
               { id: 'PENDING', label: `Pending (${pendingCount})` },
               { id: 'APPROVED', label: 'Terverifikasi' },
               { id: 'REJECTED', label: 'Ditolak' },
-            ].map(tab => (
+            ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
@@ -182,7 +199,7 @@ const TransactionVerificationPage = ({
           </div>
 
           {filteredTrx.length > 0 ? (
-            <TransactionTable 
+            <TransactionTable
               filteredTrx={filteredTrx}
               handleOpenVerifyModal={handleOpenVerifyModal}
               handleOpenRejectModal={handleOpenRejectModal}

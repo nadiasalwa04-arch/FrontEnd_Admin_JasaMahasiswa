@@ -45,10 +45,18 @@ const ServiceCard = ({ service, onReview }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          <div className="h-14 bg-slate-200/80 rounded-xl" />
-          <div className="h-14 bg-slate-300/80 rounded-xl" />
-        </div>
+        <div className="grid grid-cols-2 gap-2.5 my-3">
+  <div className="h-20 rounded-xl bg-slate-200/80 overflow-hidden flex items-center justify-center">
+    {service.bannerUrl ? (
+      <img
+        src={service.bannerUrl}
+        alt={service.title}
+        className="w-full h-full object-cover"
+      />
+    ) : null}
+  </div>
+  <div className="h-20 rounded-xl bg-slate-200/80" />
+</div>
 
         {/* INFO PENOLAKAN JIKA DITOLAK */}
         {isRejected && service.rejectReason && (
