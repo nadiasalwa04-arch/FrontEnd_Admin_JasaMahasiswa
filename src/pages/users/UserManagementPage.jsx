@@ -292,7 +292,7 @@ const UserManagementPage = ({
 
               <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-xs">
                 <span className="text-xs font-semibold text-slate-500 block mb-2">Mahasiswa Terverifikasi</span>
-                <div className="text-2xl sm:text-3xl font-black text-slate-900">{totalVerifiedDisplay} Orang</div>
+                <div className="text-2xl sm:text-3xl font-black text-slate-900">{totalVerifiedDisplay} User</div>
               </div>
 
               <div className="bg-[#FEF3C7]/80 border border-amber-200/90 p-6 rounded-2xl shadow-xs relative">
@@ -300,7 +300,7 @@ const UserManagementPage = ({
                   <span className="text-xs font-bold text-amber-900">Menunggu Verifikasi KTM</span>
                   <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-black text-amber-950">{totalPendingDisplay} Orang</div>
+                <div className="text-2xl sm:text-3xl font-black text-amber-950">{totalPendingDisplay} User</div>
               </div>
             </div>
 
