@@ -119,7 +119,9 @@ const DashboardPage = ({
     fetchAllDashboardData();
 
     const handleClickOutside = (e) => {
-      if (notificationRef.current && !notificationRef.current.contains(e.target)) setShowNotifications(false);
+      if (notificationRef.current && !notificationRef.current.contains(e.target)) {
+        setShowNotifications(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);

@@ -16,14 +16,16 @@ const TransactionVerificationPage = ({
   onNavigateSettings = () => {}
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('ALL'); 
+  const [activeTab, setActiveTab] = useState('ALL');
 
   const [selectedTrx, setSelectedTrx] = useState(null);
-  const [activeModal, setActiveModal] = useState(null); 
+  const [activeModal, setActiveModal] = useState(null);
 
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef(null);
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'Pembayaran Masuk', desc: 'Siti A. melakukan pembayaran #TRX-8821', time: '5 mnt lalu', unread: true },
+  ]);
 
   // STATE TRANSAKSI & TOTAL USER DARI DATABASE
   const [transactions, setTransactions] = useState([]);
@@ -37,10 +39,10 @@ const TransactionVerificationPage = ({
     try {
       const [trxRes, statsRes] = await Promise.all([
         fetch('http://localhost:3000/api/admin/transactions', {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` }
         }),
         fetch('http://localhost:3000/api/admin/stats', {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` }
         })
       ]);
 
@@ -50,13 +52,13 @@ const TransactionVerificationPage = ({
       if (statsResult.success && statsResult.data) {
         setTotalUsers(statsResult.data.totalUsers || 0);
       }
-      
+
       if (result.success) {
-        const mappedTrx = result.data.map(t => {
+        const mappedTrx = result.data.map((t) => {
           const rawNominal = Number(t.total_harga || t.harga || t.service_price || t.total_price || t.amount || 0);
           const rawStatus = (t.status || '').toLowerCase();
-          
-          let mappedStatus = 'Pending'; 
+
+          let mappedStatus = 'Pending';
           if (rawStatus === 'selesai' || rawStatus === 'completed' || rawStatus === 'approved') {
             mappedStatus = 'Selesai';
           } else if (rawStatus === 'ditolak' || rawStatus === 'rejected' || rawStatus === 'cancelled') {
@@ -79,7 +81,7 @@ const TransactionVerificationPage = ({
         setTransactions(mappedTrx);
       }
     } catch (error) {
-      console.error("Gagal mengambil data transaksi:", error);
+      console.error('Gagal mengambil data transaksi:', error);
     }
   };
 
@@ -107,23 +109,27 @@ const TransactionVerificationPage = ({
 
   const handleConfirmApprove = () => {
     if (!selectedTrx) return;
-    setTransactions(prev => prev.map(t => t.id === selectedTrx.id ? { ...t, status: 'Selesai' } : t));
+    setTransactions((prev) =>
+      prev.map((t) => (t.id === selectedTrx.id ? { ...t, status: 'Selesai' } : t))
+    );
     setActiveModal(null);
     setSelectedTrx(null);
   };
 
-  const filteredTrx = transactions.filter(t => {
-    const matchesTab = activeTab === 'ALL' || 
-                       (activeTab === 'PENDING' && t.status === 'Pending') ||
-                       (activeTab === 'APPROVED' && t.status === 'Selesai') ||
-                       (activeTab === 'REJECTED' && t.status === 'Ditolak');
-    const matchesSearch = t.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          t.buyer.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredTrx = transactions.filter((t) => {
+    const matchesTab =
+      activeTab === 'ALL' ||
+      (activeTab === 'PENDING' && t.status === 'Pending') ||
+      (activeTab === 'APPROVED' && t.status === 'Selesai') ||
+      (activeTab === 'REJECTED' && t.status === 'Ditolak');
+    const matchesSearch =
+      t.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.buyer.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesTab && matchesSearch;
   });
 
-  const pendingCount = transactions.filter(t => t.status === 'Pending').length;
+  const pendingCount = transactions.filter((t) => t.status === 'Pending').length;
   const totalOmset = transactions.reduce((sum, t) => sum + (t.rawAmount || 0), 0);
 
   return (
@@ -141,7 +147,10 @@ const TransactionVerificationPage = ({
       setNotifications={setNotifications}
       notificationRef={notificationRef}
       onNavigateDashboard={onNavigateDashboard}
-      onNavigateTransactionVerification={onNavigateTransactionVerification}
+      onNavigateTransactionVerification={() => {
+        setActiveTab('ALL');
+        onNavigateTransactionVerification();
+      }}
       onNavigateServiceModeration={onNavigateServiceModeration}
       onNavigateUserManagement={onNavigateUserManagement}
       onNavigateSettings={onNavigateSettings}
@@ -176,7 +185,7 @@ const TransactionVerificationPage = ({
               { id: 'PENDING', label: `Pending (${pendingCount})` },
               { id: 'APPROVED', label: 'Terverifikasi' },
               { id: 'REJECTED', label: 'Ditolak' },
-            ].map(tab => (
+            ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
@@ -190,7 +199,7 @@ const TransactionVerificationPage = ({
           </div>
 
           {filteredTrx.length > 0 ? (
-            <TransactionTable 
+            <TransactionTable
               filteredTrx={filteredTrx}
               handleOpenVerifyModal={handleOpenVerifyModal}
               handleOpenRejectModal={handleOpenRejectModal}

@@ -9,6 +9,7 @@ const AdminLayout = ({
   activeMenu,
   pendingServiceCount = 0,
   title,
+  breadcrumbs = [],
   searchQuery,
   setSearchQuery,
   showNotifications,
@@ -105,6 +106,8 @@ const AdminLayout = ({
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300 ease-in-out">
         <Header
           title={title}
+          breadcrumbs={breadcrumbs}
+          onNavigateDashboard={onNavigateDashboard}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           showNotifications={showNotifications}

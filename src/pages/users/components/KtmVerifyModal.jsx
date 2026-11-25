@@ -115,6 +115,7 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
 
   return (
     <div className="space-y-5">
+      {/* BARIS ATAS: TOMBOL KEMBALI & TOAST SIMPAN */}
       <div className="flex items-center justify-between gap-3">
         <button
           onClick={onBack}
@@ -131,10 +132,12 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
         )}
       </div>
 
+      {/* CARD UTAMA EDIT & DETAIL PENGGUNA */}
       <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-6 sm:p-8 space-y-8">
+        {/* HEADER SECTION */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
           <div>
-            <h2 className="text-base sm:text-lg font-extrabold text-slate-900">Edit & Detail Pengguna</h2>
+            <h2 className="text-base sm:text-lg font-extrabold text-slate-900">Edit &amp; Detail Pengguna</h2>
             <p className="text-xs text-slate-400 mt-0.5">Perbarui informasi profil, peran, dan status akun pengguna</p>
           </div>
 
@@ -148,7 +151,9 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
           </button>
         </div>
 
+        {/* FORM PROFIL PENGGUNA */}
         <div className="flex flex-col lg:flex-row gap-8 items-start">
+          {/* KOLOM KIRI: AVATAR & BADGE */}
           <div className="w-full lg:w-48 flex flex-col items-center text-center shrink-0 pt-2">
             <div className="w-24 h-24 rounded-full bg-[#DBEAFE] text-[#2563EB] font-black text-2xl flex items-center justify-center mb-3 shadow-inner">
               {selectedUser.initials}
@@ -160,6 +165,7 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
             </span>
           </div>
 
+          {/* KOLOM KANAN: GRID INPUT FORM */}
           <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
             <div className="space-y-1.5">
               <label className="font-extrabold text-slate-700 block">Nama Lengkap</label>
@@ -182,7 +188,7 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-extrabold text-slate-700 block">Jurusan / Universitas</label>
+              <label className="font-extrabold text-slate-700 block">Program Studi / Universitas</label>
               <input
                 type="text"
                 value={formData.institution}
@@ -231,6 +237,7 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
           </div>
         </div>
 
+        {/* BAGIAN VERIFIKASI DOKUMEN KTM */}
         {!isGeneralClient && (
           <div className="border-t border-slate-100 pt-7 space-y-5">
             <div>
@@ -239,6 +246,7 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* PREVIEW KARTU KTM (KIRI) */}
               <div className="lg:col-span-7 space-y-2">
                 <span className="text-xs font-extrabold text-slate-700 block">Lampiran Kartu Tanda Mahasiswa (KTM)</span>
 
@@ -271,10 +279,11 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
                 </div>
 
                 <p className="text-[11px] text-slate-400 pt-1">
-                  Tanggal Unggah Dokumen <span className="font-extrabold text-slate-700 ml-1">{selectedUser.uploadedAt}</span>
+                  Tanggal Unggah Dokumen <span className="font-extrabold text-slate-700 ml-1">{selectedUser.uploadedAt || '-'}</span>
                 </p>
               </div>
 
+              {/* STATUS & TOMBOL / KONFIRMASI DI AREA KTM (KANAN) */}
               <div className="lg:col-span-5 space-y-4 lg:pt-6">
                 <div className={`p-3.5 rounded-xl text-center font-extrabold text-xs border transition-colors ${
                   formData.status === 'Terverifikasi'

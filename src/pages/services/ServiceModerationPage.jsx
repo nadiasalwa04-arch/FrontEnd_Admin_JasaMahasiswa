@@ -34,12 +34,12 @@ const ServiceModerationPage = ({
 
     try {
       const response = await fetch('http://localhost:3000/api/admin/services', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
       const result = await response.json();
 
       if (result.success) {
-        const mappedServices = result.data.map(s => {
+        const mappedServices = result.data.map((s) => {
           const rawStatus = (s.status || '').toLowerCase();
           let mappedStatus = 'PENDING';
           if (rawStatus === 'aktif' || rawStatus === 'approved') mappedStatus = 'APPROVED';
@@ -61,7 +61,7 @@ const ServiceModerationPage = ({
           };
         });
         setServices(mappedServices);
-        setPendingServiceCount(mappedServices.filter(s => s.status === 'PENDING').length);
+        setPendingServiceCount(mappedServices.filter((s) => s.status === 'PENDING').length);
       }
     } catch (error) {
       console.error('Gagal mengambil data moderasi jasa:', error);
@@ -91,11 +91,13 @@ const ServiceModerationPage = ({
     try {
       await fetch(`http://localhost:3000/api/admin/services/${selectedService.id}/moderate`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status: 'aktif' })
       });
-      setServices(prev => prev.map(s => s.id === selectedService.id ? { ...s, status: 'APPROVED' } : s));
-      setPendingServiceCount(prev => Math.max(0, prev - 1));
+      setServices((prev) =>
+        prev.map((s) => (s.id === selectedService.id ? { ...s, status: 'APPROVED' } : s))
+      );
+      setPendingServiceCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
       console.error(err);
     }
@@ -109,11 +111,17 @@ const ServiceModerationPage = ({
     try {
       await fetch(`http://localhost:3000/api/admin/services/${selectedService.id}/moderate`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status: 'ditolak' })
       });
-      setServices(prev => prev.map(s => s.id === selectedService.id ? { ...s, status: 'REJECTED', rejectReason: reason, rejectNote: note } : s));
-      setPendingServiceCount(prev => Math.max(0, prev - 1));
+      setServices((prev) =>
+        prev.map((s) =>
+          s.id === selectedService.id
+            ? { ...s, status: 'REJECTED', rejectReason: reason, rejectNote: note }
+            : s
+        )
+      );
+      setPendingServiceCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
       console.error(err);
     }
@@ -121,14 +129,15 @@ const ServiceModerationPage = ({
     setSelectedService(null);
   };
 
-  const filteredServices = services.filter(service => {
+  const filteredServices = services.filter((service) => {
     const matchesTab = service.status === activeTab;
-    const matchesSearch = (service.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (service.author || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch =
+      (service.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (service.author || '').toLowerCase().includes(searchQuery.toLowerCase());
     return matchesTab && matchesSearch;
   });
 
-  const pendingCount = services.filter(s => s.status === 'PENDING').length;
+  const pendingCount = services.filter((s) => s.status === 'PENDING').length;
 
   return (
     <AdminLayout
@@ -163,14 +172,14 @@ const ServiceModerationPage = ({
           <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-xs">
             <span className="text-xs font-bold text-slate-400 block mb-2">Total Jasa Disetujui</span>
             <div className="text-3xl font-black text-slate-900">
-              {services.filter(s => s.status === 'APPROVED').length} Jasa
+              {services.filter((s) => s.status === 'APPROVED').length} Jasa
             </div>
           </div>
 
           <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-xs">
             <span className="text-xs font-bold text-slate-400 block mb-2">Jasa Ditolak</span>
             <div className="text-3xl font-black text-slate-900">
-              {services.filter(s => s.status === 'REJECTED').length} Jasa
+              {services.filter((s) => s.status === 'REJECTED').length} Jasa
             </div>
           </div>
         </div>
@@ -205,7 +214,7 @@ const ServiceModerationPage = ({
 
           {filteredServices.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredServices.map(service => (
+              {filteredServices.map((service) => (
                 <ServiceCard
                   key={service.id}
                   service={service}
