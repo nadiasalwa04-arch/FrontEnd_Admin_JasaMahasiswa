@@ -151,9 +151,9 @@ const KtmVerifyModal = ({ selectedUser, onBack, onUpdateUser }) => {
               />
             </div>
 
-            {/* Jurusan / Universitas */}
+            {/* Program Studi / Universitas */}
             <div className="space-y-1.5">
-              <label className="font-extrabold text-slate-700 block">Jurusan / Universitas</label>
+              <label className="font-extrabold text-slate-700 block">Program Studi / Universitas</label>
               <input
                 type="text"
                 value={formData.institution}

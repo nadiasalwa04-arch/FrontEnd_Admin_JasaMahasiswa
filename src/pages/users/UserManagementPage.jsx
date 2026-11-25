@@ -1,8 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, ChevronDown, AlertTriangle } from 'lucide-react';
+import { ChevronDown, Check, AlertTriangle } from 'lucide-react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import UserTable from './components/UserTable';
 import KtmVerifyModal from './components/KtmVerifyModal';
+
+const ROLE_OPTIONS = [
+  { value: 'ALL', label: 'Semua Peran (Mahasiswa/Klien)' },
+  { value: 'Penyedia Jasa', label: 'Penyedia Jasa' },
+  { value: 'Klien', label: 'Klien' },
+  { value: 'Klien Umum', label: 'Klien Umum' },
+];
 
 const UserManagementPage = ({
   isSidebarOpen,
@@ -16,7 +23,14 @@ const UserManagementPage = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
+  const [statusTab, setStatusTab] = useState('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
   const [selectedUser, setSelectedUser] = useState(null);
+
+  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
+  const roleDropdownRef = useRef(null);
 
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef(null);
@@ -24,7 +38,6 @@ const UserManagementPage = ({
     { id: 1, title: 'Verifikasi KTM Baru', desc: 'Budi Setiawan mengunggah KTM untuk verifikasi.', time: '15 mnt lalu', unread: true },
   ]);
 
-  // Data Pengguna sesuai desain
   const [users, setUsers] = useState([
     {
       id: 1,
@@ -89,6 +102,70 @@ const UserManagementPage = ({
       status: 'Terverifikasi',
       uploadedAt: '05 Oktober 2026, 11:05 WIB',
       note: ''
+    },
+    {
+      id: 5,
+      initials: 'MR',
+      name: 'Maya Rahmawati',
+      email: 'maya.r@student.ub.ac.id',
+      institution: 'Statistika UB',
+      campusHeader: 'UNIVERSITAS BRAWIJAYA',
+      nim: '225090500111012',
+      faculty: 'Fakultas MIPA',
+      major: 'S1 Statistika',
+      phone: '+62 812-9988-7766',
+      role: 'Penyedia Jasa',
+      status: 'Pending',
+      uploadedAt: '09 Oktober 2026, 10:30 WIB',
+      note: ''
+    },
+    {
+      id: 6,
+      initials: 'DF',
+      name: 'Dimas Febrian',
+      email: 'dimas.f@student.itb.ac.id',
+      institution: 'Teknik Elektro ITB',
+      campusHeader: 'INSTITUT TEKNOLOGI BANDUNG',
+      nim: '13221045',
+      faculty: 'STEI',
+      major: 'Teknik Elektro',
+      phone: '+62 856-3322-1100',
+      role: 'Penyedia Jasa',
+      status: 'Terverifikasi',
+      uploadedAt: '04 Oktober 2026, 16:45 WIB',
+      note: ''
+    },
+    {
+      id: 7,
+      initials: 'SN',
+      name: 'Siti Nurhaliza',
+      email: 'siti.nur@yahoo.com',
+      institution: 'Umum / Non-Mahasiswa',
+      campusHeader: '-',
+      nim: '-',
+      faculty: '-',
+      major: '-',
+      phone: '+62 878-5544-3322',
+      role: 'Klien Umum',
+      status: 'Aktif',
+      uploadedAt: '-',
+      note: ''
+    },
+    {
+      id: 8,
+      initials: 'FA',
+      name: 'Fajar Nugroho',
+      email: 'fajar.n@student.ugm.ac.id',
+      institution: 'Ilmu Komputer UGM',
+      campusHeader: 'UNIVERSITAS GADJAH MADA',
+      nim: '21/478910/PA/20789',
+      faculty: 'FMIPA',
+      major: 'Ilmu Komputer',
+      phone: '+62 819-7766-5544',
+      role: 'Klien',
+      status: 'Ditolak',
+      uploadedAt: '07 Oktober 2026, 08:50 WIB',
+      note: 'Foto KTM terpotong pada bagian NIM.'
     }
   ]);
 
@@ -97,24 +174,24 @@ const UserManagementPage = ({
       if (notificationRef.current && !notificationRef.current.contains(e.target)) {
         setShowNotifications(false);
       }
+      if (roleDropdownRef.current && !roleDropdownRef.current.contains(e.target)) {
+        setIsRoleDropdownOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, roleFilter, statusTab]);
 
   const handleUpdateUser = (updatedUser) => {
     setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
     setSelectedUser(updatedUser);
   };
 
-  // Hitung perubahan dinamis untuk kartu statistik (basis awal: 85 terverifikasi, 12 pending)
-  const verifiedDiff = users.filter((u) => u.status === 'Terverifikasi').length - 1;
-  const pendingDiff = users.filter((u) => u.status === 'Pending').length - 1;
-
-  const totalVerifiedDisplay = 85 + verifiedDiff;
-  const totalPendingDisplay = 12 + pendingDiff;
-
-  const filteredUsers = users.filter((user) => {
+  const baseFilteredUsers = users.filter((user) => {
     const matchesRole = roleFilter === 'ALL' || user.role === roleFilter;
     const query = searchQuery.toLowerCase();
     const matchesSearch =
@@ -124,13 +201,62 @@ const UserManagementPage = ({
     return matchesRole && matchesSearch;
   });
 
+  const countAll = baseFilteredUsers.length;
+  const countPending = baseFilteredUsers.filter((u) => u.status === 'Pending' || u.status === 'Unggah Ulang').length;
+  const countVerified = baseFilteredUsers.filter((u) => u.status === 'Terverifikasi').length;
+  const countActive = baseFilteredUsers.filter((u) => u.status === 'Aktif').length;
+  const countRejected = baseFilteredUsers.filter((u) => u.status === 'Ditolak').length;
+
+  const finalFilteredUsers = baseFilteredUsers.filter((user) => {
+    if (statusTab === 'ALL') return true;
+    if (statusTab === 'Pending') return user.status === 'Pending' || user.status === 'Unggah Ulang';
+    return user.status === statusTab;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(finalFilteredUsers.length / itemsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedUsers = finalFilteredUsers.slice(
+    (safeCurrentPage - 1) * itemsPerPage,
+    safeCurrentPage * itemsPerPage
+  );
+
+  const verifiedDiff = users.filter((u) => u.status === 'Terverifikasi').length - 2;
+  const pendingDiff = users.filter((u) => u.status === 'Pending').length - 2;
+  const totalVerifiedDisplay = 85 + verifiedDiff;
+  const totalPendingDisplay = 12 + pendingDiff;
+
+  const selectedRoleLabel =
+    ROLE_OPTIONS.find((opt) => opt.value === roleFilter)?.label || 'Semua Peran';
+
+  const detailTitle = selectedUser
+    ? selectedUser.role === 'Klien Umum'
+      ? 'Edit / Detail Pengguna'
+      : 'Cek Dokumen KTM'
+    : 'Manajemen User';
+
+  const statusTabs = [
+    { id: 'ALL', label: `Semua (${countAll})` },
+    { id: 'Pending', label: `Pending (${countPending})` },
+    { id: 'Terverifikasi', label: `Terverifikasi (${countVerified})` },
+    { id: 'Aktif', label: `Aktif (${countActive})` },
+    { id: 'Ditolak', label: `Ditolak (${countRejected})` },
+  ];
+
   return (
     <AdminLayout
       isSidebarOpen={isSidebarOpen}
       setIsSidebarOpen={setIsSidebarOpen}
       activeMenu="user-management"
       pendingServiceCount={pendingServiceCount}
-      title={selectedUser ? 'Cek Dokumen/KTM' : 'Manajemen User'}
+      title={detailTitle}
+      breadcrumbs={
+        selectedUser
+          ? [
+              { label: 'Manajemen User', onClick: () => setSelectedUser(null) },
+              { label: detailTitle },
+            ]
+          : []
+      }
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
       showNotifications={showNotifications}
@@ -143,67 +269,80 @@ const UserManagementPage = ({
       onNavigateServiceModeration={onNavigateServiceModeration}
       onNavigateUserManagement={() => {
         setSelectedUser(null);
+        setStatusTab('ALL');
         onNavigateUserManagement();
       }}
       onNavigateSettings={onNavigateSettings}
     >
       <div className="p-4 sm:p-6 md:p-8 space-y-6">
         {selectedUser ? (
-          /* HALAMAN DETAIL / CEK DOKUMEN KTM */
           <KtmVerifyModal
             selectedUser={selectedUser}
             onBack={() => setSelectedUser(null)}
             onUpdateUser={handleUpdateUser}
           />
         ) : (
-          /* HALAMAN UTAMA MANAJEMEN USER */
           <>
-            {/* BARIS PENCARIAN & FILTER ROLE */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                Manajemen User
-              </h1>
+            {/* BARIS SUBJUDUL & SHADCN SELECT DROPDOWN (TANPA JUDUL GANDA) */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <p className="text-xs font-medium text-slate-500">
+                Kelola akun penyedia jasa mahasiswa dan klien pengguna platform
+              </p>
 
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                {/* Input Search */}
-                <div className="relative flex items-center w-full sm:w-64">
-                  <Search className="w-4 h-4 absolute left-3.5 text-slate-400 pointer-events-none" />
-                  <input
-                    type="text"
-                    placeholder="Cari nama, universitas, email..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#2563EB] shadow-2xs transition-all"
+              {/* SHADCN-STYLE SELECT DROPDOWN */}
+              <div className="relative w-full sm:w-64" ref={roleDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsRoleDropdownOpen((prev) => !prev)}
+                  aria-expanded={isRoleDropdownOpen}
+                  className="w-full h-10 px-3.5 bg-white border border-slate-200 hover:border-slate-300 focus:border-[#2563EB] focus:ring-2 focus:ring-blue-500/15 rounded-xl text-xs font-bold text-slate-800 shadow-2xs transition-all cursor-pointer flex items-center justify-between gap-2 outline-none"
+                >
+                  <span className="truncate">{selectedRoleLabel}</span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-slate-500 shrink-0 transition-transform duration-150 ${
+                      isRoleDropdownOpen ? 'rotate-180 text-[#2563EB]' : ''
+                    }`}
                   />
-                </div>
+                </button>
 
-                {/* Dropdown Filter Peran */}
-                <div className="relative">
-                  <select
-                    value={roleFilter}
-                    onChange={(e) => setRoleFilter(e.target.value)}
-                    className="w-full sm:w-auto appearance-none pl-4 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-[#2563EB] shadow-2xs cursor-pointer"
-                  >
-                    <option value="ALL">Mahasiswa/Klien</option>
-                    <option value="Penyedia Jasa">Penyedia Jasa</option>
-                    <option value="Klien">Klien</option>
-                    <option value="Klien Umum">Klien Umum</option>
-                  </select>
-                  <ChevronDown className="w-4 h-4 text-slate-500 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
+                {isRoleDropdownOpen && (
+                  <div className="absolute right-0 mt-1.5 w-full bg-white border border-slate-200/90 rounded-xl shadow-lg shadow-slate-200/60 p-1 z-40">
+                    {ROLE_OPTIONS.map((option) => {
+                      const isSelected = roleFilter === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => {
+                            setRoleFilter(option.value);
+                            setIsRoleDropdownOpen(false);
+                          }}
+                          className={`w-full px-3 py-2 rounded-lg text-left text-xs flex items-center justify-between transition-colors cursor-pointer ${
+                            isSelected
+                              ? 'bg-slate-100 text-slate-900 font-extrabold'
+                              : 'text-slate-600 font-medium hover:bg-slate-50 hover:text-slate-900'
+                          }`}
+                        >
+                          <span className="truncate">{option.label}</span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-[#2563EB] shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* 3 KARTU STATISTIK DINAMIS */}
+            {/* 3 KARTU STATISTIK */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-xs">
                 <span className="text-xs font-semibold text-slate-500 block mb-2">Total Pengguna</span>
-                <div className="text-2xl sm:text-3xl font-black text-slate-900">142 User</div>
+                <div className="text-2xl sm:text-3xl font-black text-slate-900">120 User</div>
               </div>
 
               <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-xs">
                 <span className="text-xs font-semibold text-slate-500 block mb-2">Mahasiswa Terverifikasi</span>
-                <div className="text-2xl sm:text-3xl font-black text-slate-900">{totalVerifiedDisplay} Orang</div>
+                <div className="text-2xl sm:text-3xl font-black text-slate-900">{totalVerifiedDisplay} User</div>
               </div>
 
               <div className="bg-[#FEF3C7]/80 border border-amber-200/90 p-6 rounded-2xl shadow-xs relative">
@@ -211,15 +350,42 @@ const UserManagementPage = ({
                   <span className="text-xs font-bold text-amber-900">Menunggu Verifikasi KTM</span>
                   <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-black text-amber-950">{totalPendingDisplay} Orang</div>
+                <div className="text-2xl sm:text-3xl font-black text-amber-950">{totalPendingDisplay} User</div>
               </div>
             </div>
 
-            {/* TABEL PENGGUNA */}
-            <UserTable
-              users={filteredUsers}
-              onSelectUser={(user) => setSelectedUser(user)}
-            />
+            {/* KONTAINER TAB KATEGORI STATUS + TABEL + PAGINATION */}
+            <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-4 sm:p-6 space-y-5">
+              <div className="flex border-b border-slate-100 gap-6 sm:gap-8 overflow-x-auto">
+                {statusTabs.map((tab) => {
+                  const isActive = statusTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setStatusTab(tab.id)}
+                      className={`pb-3 text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap relative ${
+                        isActive
+                          ? 'text-[#2563EB] border-b-2 border-[#2563EB]'
+                          : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <UserTable
+                users={paginatedUsers}
+                onSelectUser={(user) => setSelectedUser(user)}
+                currentPage={safeCurrentPage}
+                totalPages={totalPages}
+                totalItems={finalFilteredUsers.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={(page) => setCurrentPage(page)}
+              />
+            </div>
           </>
         )}
       </div>
