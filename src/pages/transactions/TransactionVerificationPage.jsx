@@ -16,52 +16,54 @@ const TransactionVerificationPage = ({
   onNavigateSettings = () => {}
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('ALL'); 
+  const [activeTab, setActiveTab] = useState('ALL');
 
   const [selectedTrx, setSelectedTrx] = useState(null);
-  const [activeModal, setActiveModal] = useState(null); 
+  const [activeModal, setActiveModal] = useState(null);
 
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef(null);
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'Pembayaran Masuk', desc: 'Siti A. melakukan pembayaran #TRX-8821', time: '5 mnt lalu', unread: true },
+  ]);
 
-  // STATE TRANSAKSI DARI DATABASE
-  const [transactions, setTransactions] = useState([]);
-
-  // FUNGSI FETCH TRANSAKSI DARI BACKEND
-  const fetchTransactions = async () => {
-    const token = localStorage.getItem('adminToken');
-    if (!token) return;
-
-    try {
-      const response = await fetch('http://localhost:3000/api/admin/transactions', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const result = await response.json();
-      
-      if (result.success) {
-        // Mapping data MySQL agar sesuai dengan properti UI
-        const mappedTrx = result.data.map(t => ({
-          id: `#TRX-${t.id}`,
-          fullId: `TRX-${t.id}-2026`,
-          title: t.deskripsi_transaksi || 'Jasa Mahasiswa',
-          serviceName: 'Layanan Jasa',
-          buyer: t.buyer_name || 'Mahasiswa',
-          seller: t.seller_name || 'Provider',
-          amount: `Rp ${Number(t.amount || 0).toLocaleString('id-ID')}`,
-          status: t.status === 'pending' ? 'Pending' : t.status === 'selesai' ? 'Selesai' : 'Ditolak',
-          bank: t.metode_pembayaran || 'QRIS'
-        }));
-        setTransactions(mappedTrx);
-      }
-    } catch (error) {
-      console.error("Gagal mengambil data transaksi:", error);
+  const [transactions, setTransactions] = useState([
+    {
+      id: '#TRX-8821',
+      fullId: 'TRX-8821-2026',
+      title: 'Jasa Web React & Tailwind (E-Wallet)',
+      serviceName: 'Jasa Web React & Tailwind',
+      buyer: 'Siti A.',
+      seller: 'Budi S.',
+      amount: 'Rp 77.000',
+      status: 'Pending',
+      bank: 'GoPay / QRIS'
+    },
+    {
+      id: '#TRX-8820',
+      fullId: 'TRX-8820-2026',
+      title: 'Pencairan Saldo Bank BCA (a.n Andi)',
+      serviceName: 'Pencairan Saldo Bank BCA',
+      buyer: 'Andi P.',
+      seller: 'Platform',
+      amount: 'Rp 150.000',
+      status: 'Ditolak',
+      bank: 'Transfer Bank BCA'
+    },
+    {
+      id: '#TRX-8819',
+      fullId: 'TRX-8819-2026',
+      title: 'Jasa Desain Poster (QRIS)',
+      serviceName: 'Jasa Desain Poster',
+      buyer: 'Budi S.',
+      seller: 'Arief S.',
+      amount: 'Rp 35.000',
+      status: 'Selesai',
+      bank: 'QRIS Auto'
     }
-  };
+  ]);
 
   useEffect(() => {
-    fetchTransactions();
-
     const handleClickOutside = (e) => {
       if (notificationRef.current && !notificationRef.current.contains(e.target)) {
         setShowNotifications(false);
@@ -101,6 +103,12 @@ const TransactionVerificationPage = ({
 
   const pendingCount = transactions.filter(t => t.status === 'Pending').length;
 
+  const tabLabels = {
+    PENDING: 'Pending',
+    APPROVED: 'Terverifikasi',
+    REJECTED: 'Ditolak',
+  };
+
   return (
     <AdminLayout
       isSidebarOpen={isSidebarOpen}
@@ -108,6 +116,14 @@ const TransactionVerificationPage = ({
       activeMenu="verifikasi"
       pendingServiceCount={pendingServiceCount}
       title="Verifikasi Transaksi"
+      breadcrumbs={
+        activeTab !== 'ALL'
+          ? [
+              { label: 'Verifikasi Transaksi', onClick: () => setActiveTab('ALL') },
+              { label: tabLabels[activeTab] },
+            ]
+          : []
+      }
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
       showNotifications={showNotifications}
@@ -116,7 +132,10 @@ const TransactionVerificationPage = ({
       setNotifications={setNotifications}
       notificationRef={notificationRef}
       onNavigateDashboard={onNavigateDashboard}
-      onNavigateTransactionVerification={onNavigateTransactionVerification}
+      onNavigateTransactionVerification={() => {
+        setActiveTab('ALL');
+        onNavigateTransactionVerification();
+      }}
       onNavigateServiceModeration={onNavigateServiceModeration}
       onNavigateUserManagement={onNavigateUserManagement}
       onNavigateSettings={onNavigateSettings}

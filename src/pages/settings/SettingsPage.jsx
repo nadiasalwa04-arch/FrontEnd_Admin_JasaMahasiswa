@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, LogOut, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, LogOut, CheckCircle2, X } from 'lucide-react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import ProfileForm from './components/ProfileForm';
 import SecurityForm from './components/SecurityForm';
@@ -16,8 +16,13 @@ const SettingsPage = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('settings');
-  
-  const savedAdmin = JSON.parse(localStorage.getItem('adminData') || '{"nama":"Super Admin","email":"admin@jasa.id"}');
+
+  // State Modal Konfirmasi Logout
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const savedAdmin = JSON.parse(
+    localStorage.getItem('adminData') || '{"nama":"Super Admin","email":"admin@jasa.id"}'
+  );
 
   const [profile, setProfile] = useState({
     name: savedAdmin.nama || 'Super Admin',
@@ -56,30 +61,29 @@ const SettingsPage = ({
 
     try {
       const response = await fetch('http://localhost:3000/api/admin/settings', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
       const result = await response.json();
 
       if (result.success) {
         const settingsArr = result.data.settings || [];
-        const feeObj = settingsArr.find(s => s.setting_key === 'platform_fee_percent');
-const minObj = settingsArr.find(s => s.setting_key === 'min_withdrawal');
+        const feeObj = settingsArr.find((s) => s.setting_key === 'platform_fee_percent');
+        const minObj = settingsArr.find((s) => s.setting_key === 'min_withdrawal');
 
         if (feeObj) setPlatformFee(`${feeObj.setting_value}%`);
         if (minObj) setMinWithdraw(`Rp ${Number(minObj.setting_value).toLocaleString('id-ID')}`);
         if (result.data.logs) setAdminLogs(result.data.logs);
       }
 
-      if (result.data.admin) {
-  setProfile(prev => ({
-    ...prev,
-    name: result.data.admin.nama || prev.name,
-    email: result.data.admin.email || prev.email,
-    phone: result.data.admin.no_hp || prev.phone,
-    avatarUrl: result.data.admin.avatar_url || prev.avatarUrl
-  }));
-}
-
+      if (result.data?.admin) {
+        setProfile((prev) => ({
+          ...prev,
+          name: result.data.admin.nama || prev.name,
+          email: result.data.admin.email || prev.email,
+          phone: result.data.admin.no_hp || prev.phone,
+          avatarUrl: result.data.admin.avatar_url || prev.avatarUrl
+        }));
+      }
     } catch (error) {
       console.error('Gagal mengambil pengaturan:', error);
     }
@@ -108,7 +112,7 @@ const minObj = settingsArr.find(s => s.setting_key === 'min_withdrawal');
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           platform_fee: cleanFee,
@@ -142,19 +146,22 @@ const minObj = settingsArr.find(s => s.setting_key === 'min_withdrawal');
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
-  nama: profile.name,
-  email: profile.email,
-  no_hp: profile.phone,
-  avatar_url: profile.avatarUrl,
-  new_password: isPasswordUpdate ? passwords.newPass : ''
-})
+          nama: profile.name,
+          email: profile.email,
+          no_hp: profile.phone,
+          avatar_url: profile.avatarUrl,
+          new_password: isPasswordUpdate ? passwords.newPass : ''
+        })
       });
       const result = await response.json();
       if (result.success) {
-        localStorage.setItem('adminData', JSON.stringify({ ...savedAdmin, nama: profile.name, email: profile.email }));
+        localStorage.setItem(
+          'adminData',
+          JSON.stringify({ ...savedAdmin, nama: profile.name, email: profile.email })
+        );
         if (isPasswordUpdate) {
           setPasswords({ current: '', newPass: '', confirmPass: '' });
           triggerPopup('Password Super Admin berhasil diperbarui!');
@@ -168,8 +175,8 @@ const minObj = settingsArr.find(s => s.setting_key === 'min_withdrawal');
     }
   };
 
-  // 4. Fungsi Logout
-  const handleLogout = () => {
+  // 4. Fungsi Eksekusi Logout Setelah Konfirmasi "Ya"
+  const handleConfirmLogout = () => {
     localStorage.removeItem('adminToken');
     localStorage.removeItem('adminData');
     window.location.href = '/login';
@@ -182,6 +189,14 @@ const minObj = settingsArr.find(s => s.setting_key === 'min_withdrawal');
       activeMenu="settings"
       pendingServiceCount={pendingServiceCount}
       title={activeTab === 'settings' ? 'Pengaturan Akun & Sistem' : 'Edit Profil & Ubah Password'}
+      breadcrumbs={
+        activeTab === 'edit-profile'
+          ? [
+              { label: 'Pengaturan', onClick: () => setActiveTab('settings') },
+              { label: 'Edit Profil & Ubah Password' }
+            ]
+          : []
+      }
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
       showNotifications={showNotifications}
@@ -193,13 +208,71 @@ const minObj = settingsArr.find(s => s.setting_key === 'min_withdrawal');
       onNavigateTransactionVerification={onNavigateTransactionVerification}
       onNavigateServiceModeration={onNavigateServiceModeration}
       onNavigateUserManagement={onNavigateUserManagement}
-      onNavigateSettings={onNavigateSettings}
+      onNavigateSettings={() => {
+        setActiveTab('settings');
+        onNavigateSettings();
+      }}
     >
       {/* POP-UP NOTIFIKASI HIJAU */}
       {popupMessage && (
         <div className="fixed top-6 right-6 z-50 bg-emerald-600 text-white px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-3">
           <CheckCircle2 className="w-5 h-5 shrink-0" />
           <span className="text-xs font-bold">{popupMessage}</span>
+        </div>
+      )}
+
+      {/* POP-UP KONFIRMASI LOGOUT (YA / TIDAK) */}
+      {showLogoutModal && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={() => setShowLogoutModal(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-white rounded-3xl border border-slate-200/80 shadow-2xl p-6 space-y-5 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setShowLogoutModal(false)}
+              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              aria-label="Tutup modal"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex flex-col items-center text-center space-y-3 pt-1">
+              <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center">
+                <LogOut className="w-6 h-6" />
+              </div>
+
+              <div className="space-y-1">
+                <h3 className="text-base font-black text-slate-900 tracking-tight">
+                  Konfirmasi Keluar
+                </h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Apakah Anda yakin ingin keluar dari sesi panel administrator?
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowLogoutModal(false)}
+                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-2xl transition-colors cursor-pointer"
+              >
+                Tidak
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmLogout}
+                className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-2xl shadow-md shadow-red-600/20 transition-colors cursor-pointer"
+              >
+                Ya, Keluar
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -220,7 +293,11 @@ const minObj = settingsArr.find(s => s.setting_key === 'min_withdrawal');
             <div className="bg-white p-8 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col items-center text-center">
               <div className="relative mb-4">
                 {profile.avatarUrl ? (
-                  <img src={profile.avatarUrl} alt="Avatar" className="w-28 h-28 rounded-full object-cover border-4 border-slate-50" />
+                  <img
+                    src={profile.avatarUrl}
+                    alt="Avatar"
+                    className="w-28 h-28 rounded-full object-cover border-4 border-slate-50"
+                  />
                 ) : (
                   <div className="w-28 h-28 bg-[#0F172A] rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-inner">
                     {profile.name.substring(0, 2).toUpperCase()}
@@ -241,7 +318,7 @@ const minObj = settingsArr.find(s => s.setting_key === 'min_withdrawal');
                 </button>
 
                 <button
-                  onClick={handleLogout}
+                  onClick={() => setShowLogoutModal(true)}
                   className="w-full py-3 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-2xl text-xs transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   <LogOut className="w-4 h-4" />
@@ -253,11 +330,15 @@ const minObj = settingsArr.find(s => s.setting_key === 'min_withdrawal');
             {/* KANAN: PENGATURAN PLATFORM & LOG */}
             <div className="space-y-6">
               <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
-                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Pengaturan Platform</h3>
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  Pengaturan Platform
+                </h3>
 
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1.5">Biaya Layanan (Platform Fee)</label>
+                    <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                      Biaya Layanan (Platform Fee)
+                    </label>
                     <input
                       type="text"
                       value={platformFee}
@@ -267,7 +348,9 @@ const minObj = settingsArr.find(s => s.setting_key === 'min_withdrawal');
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1.5">Batas Minimal Pencairan</label>
+                    <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                      Batas Minimal Pencairan
+                    </label>
                     <input
                       type="text"
                       value={minWithdraw}
@@ -291,15 +374,17 @@ const minObj = settingsArr.find(s => s.setting_key === 'min_withdrawal');
                 </h3>
 
                 <div className="space-y-4 border-l-2 border-slate-100 ml-2 pl-4">
-                  {adminLogs.length > 0 ? adminLogs.map((log, idx) => (
-                    <div key={idx} className="relative">
-                      <span className="w-2.5 h-2.5 bg-blue-500 rounded-full absolute -left-5 top-1"></span>
-                      <p className="text-xs font-semibold text-slate-500">
-                        {new Date(log.created_at).toLocaleString('id-ID')}
-                      </p>
-                      <p className="text-xs text-slate-700 mt-0.5">{log.action || log.aktivitas}</p>
-                    </div>
-                  )) : (
+                  {adminLogs.length > 0 ? (
+                    adminLogs.map((log, idx) => (
+                      <div key={idx} className="relative">
+                        <span className="w-2.5 h-2.5 bg-blue-500 rounded-full absolute -left-5 top-1"></span>
+                        <p className="text-xs font-semibold text-slate-500">
+                          {new Date(log.created_at).toLocaleString('id-ID')}
+                        </p>
+                        <p className="text-xs text-slate-700 mt-0.5">{log.action || log.aktivitas}</p>
+                      </div>
+                    ))
+                  ) : (
                     <p className="text-xs text-slate-400">Belum ada log aktivitas baru.</p>
                   )}
                 </div>
@@ -310,15 +395,15 @@ const minObj = settingsArr.find(s => s.setting_key === 'min_withdrawal');
 
         {activeTab === 'edit-profile' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            <ProfileForm 
-              profile={profile} 
-              setProfile={setProfile} 
-              onSave={() => handleSaveProfileToApi(false)} 
+            <ProfileForm
+              profile={profile}
+              setProfile={setProfile}
+              onSave={() => handleSaveProfileToApi(false)}
             />
-            <SecurityForm 
-              passwords={passwords} 
-              setPasswords={setPasswords} 
-              onSave={() => handleSaveProfileToApi(true)} 
+            <SecurityForm
+              passwords={passwords}
+              setPasswords={setPasswords}
+              onSave={() => handleSaveProfileToApi(true)}
             />
           </div>
         )}
