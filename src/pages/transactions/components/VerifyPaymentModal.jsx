@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, ExternalLink, ImageOff } from 'lucide-react';
 
 const VerifyPaymentModal = ({ selectedTrx, setActiveModal, handleProceedToAdvanced }) => {
   if (!selectedTrx) return null;
@@ -27,13 +27,38 @@ const VerifyPaymentModal = ({ selectedTrx, setActiveModal, handleProceedToAdvanc
         </div>
 
         <div className="space-y-1.5">
-          <span className="text-xs font-bold text-slate-800 block">Bukti Transfer Pembeli</span>
-          <div className="h-32 bg-slate-100 rounded-2xl border border-slate-200 flex flex-col items-center justify-center text-center p-4 space-y-1">
-            <span className="text-xs font-bold text-slate-500">[ Preview Bukti Transfer ]</span>
-            <span className="text-xs font-extrabold text-emerald-600 flex items-center gap-1">
-              ✓ Sesuai {selectedTrx.amount}
-            </span>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-800">Bukti Transfer Pembeli</span>
+            {selectedTrx.proofUrl && (
+              <a
+                href={selectedTrx.proofUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:underline"
+              >
+                <span>Buka Ukuran Penuh</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
           </div>
+
+          {selectedTrx.proofUrl ? (
+            <div className="bg-slate-100 rounded-2xl border border-slate-200 overflow-hidden p-2 space-y-2">
+              <img
+                src={selectedTrx.proofUrl}
+                alt="Bukti Pembayaran Pembeli"
+                className="w-full max-h-56 object-contain rounded-xl bg-white"
+              />
+              <span className="text-xs font-extrabold text-emerald-600 flex items-center justify-center gap-1 pb-1">
+                ✓ Bukti terunggah • Nominal {selectedTrx.amount}
+              </span>
+            </div>
+          ) : (
+            <div className="h-32 bg-slate-100 rounded-2xl border border-slate-200 flex flex-col items-center justify-center text-center p-4 space-y-1">
+              <ImageOff className="w-5 h-5 text-slate-400" />
+              <span className="text-xs font-bold text-slate-500">Pembeli belum mengunggah bukti pembayaran</span>
+            </div>
+          )}
         </div>
 
         <div className="p-3 bg-[#F0FDF4] border border-[#DCFCE7] rounded-xl text-[11px] text-[#15803D]">

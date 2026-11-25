@@ -71,10 +71,10 @@ const TransactionVerificationPage = ({
           const rawNominal = Number(
             t.total_harga || t.harga || t.service_price || t.total_price || t.amount || 0
           );
-          const rawStatus = (t.status || '').toLowerCase();
+          const rawStatus = (t.status_pembayaran || t.status || '').toLowerCase();
 
           let mappedStatus = 'Pending';
-          if (rawStatus === 'selesai' || rawStatus === 'completed' || rawStatus === 'approved') {
+          if (rawStatus === 'lunas' || rawStatus === 'selesai' || rawStatus === 'completed' || rawStatus === 'approved') {
             mappedStatus = 'Selesai';
           } else if (
             rawStatus === 'ditolak' ||
@@ -96,7 +96,7 @@ const TransactionVerificationPage = ({
             amount: `Rp ${rawNominal.toLocaleString('id-ID')}`,
             status: mappedStatus,
             bank: t.payment_method || t.metode_pembayaran || 'QRIS',
-            proofUrl: t.bukti_transfer || t.payment_proof || null
+            proofUrl: t.bukti_pembayaran_url ? (t.bukti_pembayaran_url.startsWith('http') ? t.bukti_pembayaran_url : `http://localhost:3000${t.bukti_pembayaran_url}`) : (t.bukti_transfer || t.payment_proof || null)
           };
         });
         setTransactions(mappedTrx);
@@ -124,7 +124,7 @@ const TransactionVerificationPage = ({
     if (!token || !numericId) return;
 
     try {
-      await fetch(`http://localhost:3000/api/admin/transactions/${numericId}/verify`, {
+      await fetch(`http://localhost:3000/api/admin/transactions/${numericId}/verify-payment`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -159,7 +159,7 @@ const TransactionVerificationPage = ({
 
   const handleApproveInAdvanced = async () => {
     if (!advancedViewTrx) return;
-    await syncTransactionStatusToApi(advancedViewTrx, 'selesai');
+    await syncTransactionStatusToApi(advancedViewTrx, 'lunas');
 
     const updatedTrx = { ...advancedViewTrx, status: 'Selesai' };
     setTransactions((prev) =>
